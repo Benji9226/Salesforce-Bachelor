@@ -416,3 +416,9 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Salesforce
+.sf/
+.sfdx/
+node_modules/
+.localdevserver/

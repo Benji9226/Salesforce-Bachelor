@@ -1,0 +1,49 @@
+---
+description: Document issues and resolutions in ISSUES.md for the bachelor thesis
+alwaysApply: true
+---
+
+# Issue Tracking
+
+Whenever we encounter an error, bug, or unexpected behavior during development, document it in `ISSUES.md` in the project root.
+
+## When to Log
+
+- Deployment or compilation errors
+- Runtime errors or unexpected behavior
+- Configuration problems
+- Any obstacle that required debugging or a workaround
+
+## Format
+
+```markdown
+## YYYY-MM-DD — Short issue title
+
+**Problem**: What went wrong (error message, unexpected behavior, etc.)
+
+**Cause**: Why it happened (if known).
+
+**Resolution**: What we did to fix it.
+```
+
+## Rules
+
+- New entries go at the top of the file (newest first).
+- Keep each section brief -- a few sentences, not paragraphs.
+- Include the actual error message or key snippet when relevant.
+- If `ISSUES.md` does not exist yet, create it with a top-level `# Issues & Resolutions` heading.
+- Log the issue as soon as it's resolved, not retroactively.
+
+## Example
+
+```markdown
+# Issues & Resolutions
+
+## 2026-04-08 — Sandbox authentication failed
+
+**Problem**: `sf org login web` returned `INVALID_LOGIN` when trying to connect to the sandbox.
+
+**Cause**: Used `login.salesforce.com` instead of `test.salesforce.com` — sandboxes require the test login URL.
+
+**Resolution**: Re-ran the auth command with `--instance-url https://test.salesforce.com` and login succeeded.
+```

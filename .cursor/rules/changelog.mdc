@@ -1,0 +1,35 @@
+---
+description: Log every successful change to CHANGELOG.md for the bachelor thesis
+alwaysApply: true
+---
+
+# Change Log
+
+After every successful change (code compiles, deploys, or works as intended), append a short entry to `CHANGELOG.md` in the project root.
+
+## Format
+
+```markdown
+## YYYY-MM-DD
+
+- **Short title**: 1-2 sentence description of what was done and why.
+```
+
+## Rules
+
+- Each entry must be 1-2 sentences max -- concise but meaningful.
+- Group entries under a date heading. If today's date heading already exists, add to it.
+- New entries go at the top of the file (newest first).
+- Focus on the *what* and *why*, not implementation details.
+- If `CHANGELOG.md` does not exist yet, create it with a top-level `# Change Log` heading.
+
+## Example
+
+```markdown
+# Change Log
+
+## 2026-04-08
+
+- **Connected Salesforce sandbox**: Set up SFDX project structure and authenticated to the benjsdbox sandbox so we can deploy Apex directly from the IDE.
+- **Created AccountTrigger**: Added a before-insert trigger on Account to auto-populate the Region field based on BillingCountry.
+```
