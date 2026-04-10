@@ -1,0 +1,11 @@
+Id,Subject,Status,Priority,ContactId,AccountId,Description
+500Vc00000SNhnJIAT,Login issues on platform,New,High,,001Vc00000YDuSbIAL,User unable to log in after password reset.
+500Vc00000SNhnKIAT,Fleet tracking GPS lag,Working,High,,001Vc00000YDuScIAL,GPS coordinates updating with 15-minute delay.
+500Vc00000SNhnLIAT,Invoice formatting error,New,Medium,,001Vc00000YDZVyIAP,Monthly invoice PDF shows incorrect VAT.
+500Vc00000SNhnMIAT,Solar panel data export fails,Working,Medium,,001Vc00000YDuSdIAL,CSV export times out for large datasets.
+500Vc00000SNhnNIAT,API rate limit exceeded,Escalated,High,,001Vc00000YDuSeIAL,Integration hitting rate limits during peak hours.
+500Vc00000SNhnOIAT,Sensor calibration drift,New,High,,001Vc00000YDuSfIAL,Hull pressure sensors showing 5% drift.
+500Vc00000SNhnPIAT,Booking confirmation not sent,Working,High,,001Vc00000YDuSgIAL,Customers not receiving email confirmations.
+500Vc00000SNhnQIAT,Dashboard loading timeout,New,Medium,,001Vc00000YDuShIAL,Risk dashboard takes over 60 seconds to load.
+500Vc00000SNhnRIAT,POS barcode scanner issue,Working,High,,001Vc00000YDuSjIAL,Scanners fail to read new barcode format.
+500Vc00000SNhnSIAT,SSO configuration error,Escalated,High,,001Vc00000YDuSlIAL,SSO returning 403 for MFA users.

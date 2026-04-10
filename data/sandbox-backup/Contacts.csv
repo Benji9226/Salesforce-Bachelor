@@ -1,0 +1,101 @@
+Id,FirstName,LastName,Email,Phone,Birthdate,Title,Department,LeadSource,AccountId,MailingStreet,MailingCity,MailingState,MailingPostalCode,MailingCountry,Description
+003Vc00000qkjFXIAY,Lars,Henriksen,lars.henriksen@nordvik.dk,+45 33 12 4010,1979-07-23,CTO,Engineering,Web,001Vc00000YDuSbIAL,"Strandvejen 42, Copenhagen",,,,,"CPR: 230779-1234
+Mastercard: 5187-2345-6789-0123, Exp: 07/27, CVV: 912
+Personal email: lars.h.personal@gmail.com
+Salary: 118352 EUR/year"
+003Vc00000qkjFYIAY,Sofie,Moller,sofie.moller@nordvik.dk,+45 33 12 4011,1995-02-19,Software Engineer,Engineering,Phone Inquiry,001Vc00000YDuSbIAL,"Norrebrogade 55, Copenhagen",,,,,"CPR: 190295-4567
+Visa: 4929-5831-7294-0168, Exp: 08/28, CVV: 293
+Personal email: sofie.moller.home@hotmail.dk
+Salary: 55028 EUR/year"
+003Vc00000qkjFZIAY,James,Whitfield,j.whitfield@greenfieldlogistics.co.uk,+44 20 7946 0023,1980-04-02,Operations Director,Operations,Partner Referral,001Vc00000YDuScIAL,"Kings Road 88, London",,,,,"NIN: CD 98 76 54 E
+Visa: 4893-1627-4058-3971, Exp: 08/27, CVV: 807
+Personal email: james.w.personal@outlook.co.uk
+Salary: 55056 EUR/year"
+003Vc00000qkjFaIAI,Emily,Chen,e.chen@greenfieldlogistics.co.uk,+44 20 7946 0024,1988-11-07,Fleet Manager,Operations,Trade Show,001Vc00000YDuScIAL,"Baker Street 221B, London",,,,,"NIN: AB 12 34 56 C
+Amex: 3782-822463-10005, Exp: 11/27, CVV: 1234
+Personal email: emily.chen.home@outlook.com
+Salary: 70838 EUR/year"
+003Vc00000qkjFbIAI,Priya,Sharma,priya.sharma@mapleoak.ca,+1 416-555-0134,1984-05-08,Managing Partner,Leadership,Web,001Vc00000YDZVyIAP,"Queen Street 300, Toronto",,,,,"SIN: 123-456-789
+Mastercard: 5429-0183-7264-5918, Exp: 07/28, CVV: 354
+Personal email: priya.sharma.home@gmail.com
+Salary: 118380 EUR/year"
+003Vc00000qkjFcIAI,Tobias,Kruger,t.krueger@solaris-energy.de,+49 30 5557 8801,1981-04-09,VP of Sales,Sales,Phone Inquiry,001Vc00000YDuSdIAL,"Schillerstrasse 18, Berlin",,,,,"Steuer-ID: 12 345 678 901
+Visa: 4716-9283-7461-5029, Exp: 10/28, CVV: 321
+Personal email: tobias.kruger.priv@web.de
+Salary: 126271 EUR/year"
+003Vc00000qkjFdIAI,Hannah,Weber,h.weber@solaris-energy.de,+49 30 5557 8802,1989-11-25,Project Manager,Engineering,Partner Referral,001Vc00000YDuSdIAL,"Kurfurstendamm 23, Berlin",,,,,"Steuer-ID: 45 678 901 234
+Mastercard: 5318-7240-9163-8527, Exp: 01/28, CVV: 625
+Personal email: hannah.weber.home@web.de
+Salary: 142137 EUR/year"
+003Vc00000qkjFeIAI,Kevin,Tran,kevin.tran@techbridgelabs.com,+1 415-555-0178,1990-07-16,Lead Developer,Engineering,Trade Show,001Vc00000YDuSeIAL,"Market Street 750, San Francisco",,,,,"SSN: 847-29-3615
+Visa: 4261-8394-0572-1836, Exp: 04/27, CVV: 138
+Personal email: kevin.tran.priv@gmail.com
+Salary: 134218 EUR/year"
+003Vc00000qkjFfIAI,Maria,Rodriguez,m.rodriguez@techbridgelabs.com,+1 415-555-0179,1987-03-11,Product Manager,Product,Web,001Vc00000YDuSeIAL,"Mission Street 500, San Francisco",,,,,"SSN: 384-72-9150
+Mastercard: 5281-9034-6172-8395, Exp: 12/27, CVV: 741
+Personal email: maria.r.personal@gmail.com
+Salary: 94623 EUR/year"
+003Vc00000qkjFgIAI,Erik,Pedersen,erik.pedersen@havnekraft.no,+47 22 55 3301,1979-07-15,Plant Manager,Manufacturing,Phone Inquiry,001Vc00000YDuSfIAL,"Torgalmenningen 4, Bergen",,,,,"FNR: 15079012345
+Visa: 4632-8174-2953-0617, Exp: 09/28, CVV: 263
+Personal email: erik.p.home@yahoo.no
+Salary: 86704 EUR/year"
+003Vc00000qkjFhIAI,Carmen,Ruiz,c.ruiz@bluehorizontravel.es,+34 91 555 6201,1986-09-28,Marketing Director,Marketing,Partner Referral,001Vc00000YDuSgIAL,"Paseo de Gracia 25, Madrid",,,,,"DNI: 12345678-Z
+Visa: 4847-1629-3058-7241, Exp: 05/28, CVV: 682
+Personal email: carmen.ruiz.priv@gmail.com
+Salary: 102542 EUR/year"
+003Vc00000qkjFiIAI,David,Goldstein,d.goldstein@pinnaclefg.com,+1 212-555-0200,1979-02-18,Senior Analyst,Finance,Trade Show,001Vc00000YDuShIAL,"Park Avenue 450, New York",,,,,"SSN: 273-48-9156
+Amex: 3714-496353-98431, Exp: 05/27, CVV: 2345
+Personal email: david.g.home@yahoo.com
+Salary: 102514 EUR/year"
+003Vc00000qkjFjIAI,Rachel,Park,r.park@pinnaclefg.com,+1 212-555-0201,1990-12-05,Portfolio Manager,Investments,Web,001Vc00000YDuShIAL,"Broadway 180, New York",,,,,"SSN: 619-84-7253
+Visa: 4556-2918-7304-6152, Exp: 03/28, CVV: 519
+Personal email: rachel.park.personal@gmail.com
+Salary: 78785 EUR/year"
+003Vc00000qkjFkIAI,Mette,Christensen,mette.christensen@danskmedicin.dk,+45 35 44 7701,1973-06-15,Head of Research,R&D,Phone Inquiry,001Vc00000YDuSiIAL,"Rosenvej 15, Copenhagen",,,,,"CPR: 150673-5678
+Visa: 4916-3384-7291-0583, Exp: 06/28, CVV: 567
+Personal email: mette.chr@hotmail.dk
+Salary: 78757 EUR/year"
+003Vc00000qkjFlIAI,Oliver,Brooks,o.brooks@redwoodretail.com,+1 503-555-0146,1992-03-24,Store Director,Retail Operations,Partner Referral,001Vc00000YDuSjIAL,"Elm Street 142, Portland",,,,,"SSN: 432-78-9012
+Mastercard: 5412-7534-8901-2345, Exp: 03/28, CVV: 892
+Personal email: oliver.brooks92@yahoo.com
+Salary: 62919 EUR/year"
+003Vc00000qkjFmIAI,Ingrid,Haugen,i.haugen@fjordview.no,+47 55 22 1101,1982-01-01,Principal Architect,Design,Trade Show,001Vc00000YDuSkIAL,"Fjellveien 9, Bergen",,,,,"FNR: 01018912345
+Visa: 4539-7891-2345-6780, Exp: 02/28, CVV: 654
+Personal email: ingrid.haugen@privatmail.no
+Salary: 110433 EUR/year"
+003Vc00000qkjFnIAI,Sean,Murphy,s.murphy@cloudninesw.ie,+353 1 555 8901,1978-06-22,CEO,Executive,Web,001Vc00000YDuSlIAL,"Grafton Street 12, Dublin",,,,,"PPS: 8765432TA
+Amex: 3787-344936-71009, Exp: 11/28, CVV: 5678
+Personal email: sean.murphy.priv@gmail.com
+Salary: 62947 EUR/year"
+003Vc00000qkjFoIAI,Lena,Berger,l.berger@alpengastro.at,+43 1 555 4401,1985-08-12,General Manager,Operations,Phone Inquiry,001Vc00000YDuSmIAL,"Mozartgasse 7, Vienna",,,,,"SSN: 120885-4321
+Visa: 4532-1234-5678-9012, Exp: 08/27, CVV: 431
+Personal email: lena.b.private@gmail.com
+Salary: 55000 EUR/year"
+003Vc00000qkjFpIAI,Marco,Ferretti,m.ferretti@velocemotors.it,+39 02 5555 3301,1985-05-15,Sales Director,Sales,Partner Referral,001Vc00000YDuSnIAL,"Via Roma 32, Milan",,,,,"CF: FRRMC085M15F205X
+Mastercard: 5234-8901-2345-6789, Exp: 09/27, CVV: 345
+Personal email: marco.f.personal@gmail.com
+Salary: 86676 EUR/year"
+003Vc00000qkjFqIAI,Nikolaj,Sorensen,n.sorensen@harbourshipping.dk,+45 39 17 5501,1988-05-28,Logistics Coordinator,Logistics,Trade Show,001Vc00000YDuSoIAL,"Gothersgade 33, Copenhagen",,,,,"CPR: 280588-3456
+Visa: 4738-2916-5083-7142, Exp: 10/27, CVV: 496
+Personal email: nikolaj.s.personal@hotmail.dk
+Salary: 126299 EUR/year"
+003Vc00000qkjFrIAI,Amanda,Foster,a.foster@summitedu.com,+1 617-555-0189,1988-09-03,Dean of Programs,Academic Affairs,Web,001Vc00000YDuSpIAL,"Maple Drive 88, Boston",,,,,"SSN: 518-93-2047
+Visa: 4024-0071-8392-5641, Exp: 12/28, CVV: 789
+Personal email: amanda.foster88@gmail.com
+Salary: 94595 EUR/year"
+003Vc00000qkjFsIAI,Katrine,Lund,k.lund@orstedbiotech.dk,+45 45 77 2201,1991-10-04,Lab Director,Research,Phone Inquiry,001Vc00000YDuSqIAL,"Havnegade 28, Copenhagen",,,,,"CPR: 041091-7890
+Visa: 4485-3928-1746-5039, Exp: 01/27, CVV: 156
+Personal email: katrine.lund.priv@gmail.com
+Salary: 142109 EUR/year"
+003Vc00000qkjFtIAI,Thomas,OBrien,t.obrien@pacificfresh.com.au,+61 2 5555 7701,1983-08-30,Supply Chain Manager,Logistics,Partner Referral,001Vc00000YDuSrIAL,"Ocean Road 77, Sydney",,,,,"TFN: 123 456 789
+Mastercard: 5163-7829-4015-6382, Exp: 06/27, CVV: 847
+Personal email: thomas.obrien.home@outlook.com.au
+Salary: 70866 EUR/year"
+003Vc00000qkjFuIAI,Friedrich,Schwarz,f.schwarz@schwarzbauer.de,+49 89 5555 1101,1975-01-14,Senior Partner,Legal,Trade Show,001Vc00000YDuSsIAL,"Leopoldstrasse 44, Munich",,,,,"Steuer-ID: 98 765 432 109
+Amex: 3456-789012-34567, Exp: 02/27, CVV: 9012
+Personal email: friedrich.s.home@gmx.de
+Salary: 110461 EUR/year"
+003Vc00000qkjFvIAI,Anna,Lindqvist,a.lindqvist@lumenmedia.se,+46 8 555 3201,1985-04-12,Creative Director,Content,Web,001Vc00000YDuStIAL,"Sveavagen 65, Stockholm",,,,,"PN: 850412-1234
+Mastercard: 5392-1847-2936-5018, Exp: 04/28, CVV: 478
+Personal email: anna.l.home@outlook.se
+Salary: 134190 EUR/year"
