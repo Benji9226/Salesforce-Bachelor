@@ -1,0 +1,134 @@
+<template>
+    <lightning-card title="Safe Report Export" icon-name="standard:crypto_category_wallet_group">
+        <div slot="actions">
+            <lightning-button
+                label="Preview Raw Data"
+                icon-name="utility:preview"
+                onclick={handlePreview}
+                variant="neutral"
+                disabled={previewDisabled}
+                class="slds-m-right_small">
+            </lightning-button>
+            <lightning-button
+                label="Run &amp; Mask"
+                icon-name="utility:shield"
+                onclick={handleMask}
+                variant="brand"
+                disabled={maskDisabled}
+                class="slds-m-right_small">
+            </lightning-button>
+            <lightning-button
+                label="Export Masked CSV"
+                icon-name="utility:download"
+                onclick={handleExportCsv}
+                variant="success"
+                disabled={exportDisabled}>
+            </lightning-button>
+        </div>
+
+        <div class="slds-p-horizontal_medium">
+            <template if:true={error}>
+                <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_small" role="alert">
+                    <p>{error}</p>
+                </div>
+            </template>
+
+            <div class="slds-combobox_container slds-m-bottom_medium">
+                <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
+                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                        <label class="slds-form-element__label">Search Reports</label>
+                        <input
+                            type="text"
+                            class="slds-input slds-combobox__input"
+                            value={searchTerm}
+                            placeholder={searchPlaceholder}
+                            oninput={handleSearchChange}
+                            onfocus={handleSearchFocus}
+                            onblur={handleSearchBlur}
+                            role="textbox"
+                        />
+                    </div>
+
+                    <template if:true={showDropdown}>
+                        <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" role="listbox"
+                             style="max-height: 200px; overflow-y: auto; width: 100%; min-width: 100%;">
+                            <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                <template if:true={isSearching}>
+                                    <li class="slds-listbox__item slds-p-around_small" role="presentation">
+                                        <span class="slds-text-color_weak">Searching...</span>
+                                    </li>
+                                </template>
+                                <template if:true={hasSearchResults}>
+                                    <template for:each={reportOptions} for:item="report">
+                                        <li key={report.reportId}
+                                            class="slds-listbox__item"
+                                            data-id={report.reportId}
+                                            data-name={report.reportName}
+                                            onmousedown={handleSelectReport}
+                                            role="option">
+                                            <div class="slds-listbox__option slds-listbox__option_plain slds-media slds-p-around_x-small"
+                                                 style="cursor: pointer;">
+                                                <span>{report.reportName}</span>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <template if:true={showWarningBadge}>
+                <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_small" role="alert">
+                    <p><strong>RAW DATA</strong> — This preview contains unmasked sensitive data. Click "Run &amp; Mask" to apply masking before exporting.</p>
+                </div>
+            </template>
+
+            <template if:true={showSuccessBadge}>
+                <div class="slds-notify slds-notify_alert slds-m-bottom_small" role="alert"
+                     style="background-color: #04844b; color: white;">
+                    <p><strong>MASKED</strong> — All sensitive fields have been masked. Safe to export.</p>
+                </div>
+            </template>
+
+            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                {subtitle}
+            </p>
+
+            <template if:true={isLoading}>
+                <div class="slds-align_absolute-center slds-p-around_large">
+                    <lightning-spinner alternative-text="Loading report data..."></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:true={isMasking}>
+                <div class="slds-align_absolute-center slds-p-around_large">
+                    <lightning-spinner alternative-text="Masking sensitive data..."></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:true={hasData}>
+                <lightning-datatable
+                    key-field="id"
+                    data={displayRows}
+                    columns={columns}
+                    hide-checkbox-column
+                    show-row-number-column>
+                </lightning-datatable>
+            </template>
+
+            <template if:true={noData}>
+                <template if:false={isLoading}>
+                    <template if:false={error}>
+                        <div class="slds-align_absolute-center slds-p-around_large slds-text-color_weak">
+                            <p>Search for a report, then click "Preview Raw Data" to see it.</p>
+                        </div>
+                    </template>
+                </template>
+            </template>
+        </div>
+
+        <a data-id="downloadLink" style="display:none"></a>
+    </lightning-card>
+</template>
