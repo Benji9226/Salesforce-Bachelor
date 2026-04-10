@@ -1,0 +1,26 @@
+FirstName,LastName,Email,Phone,MobilePhone,Title,Department,Account.Name
+Lars,Henriksen,lars.henriksen@nordvik.dk,+45 33 12 4010,+45 21 55 4010,CTO,Engineering,Nordvik Solutions
+Sofie,Møller,sofie.moller@nordvik.dk,+45 33 12 4011,+45 21 55 4011,Software Engineer,Engineering,Nordvik Solutions
+James,Whitfield,j.whitfield@greenfieldlogistics.co.uk,+44 20 7946 0023,+44 77 1234 5601,Operations Director,Operations,Greenfield Logistics
+Emily,Chen,e.chen@greenfieldlogistics.co.uk,+44 20 7946 0024,+44 77 1234 5602,Fleet Manager,Operations,Greenfield Logistics
+Priya,Sharma,priya.sharma@mapleoak.ca,+1 416-555-0134,+1 416-555-0234,Managing Partner,Leadership,Maple & Oak Consulting
+Tobias,Krüger,t.krueger@solaris-energy.de,+49 30 5557 8801,+49 170 555 8801,VP of Sales,Sales,Solaris Energy Group
+Hannah,Weber,h.weber@solaris-energy.de,+49 30 5557 8802,+49 170 555 8802,Project Manager,Engineering,Solaris Energy Group
+Kevin,Tran,kevin.tran@techbridgelabs.com,+1 415-555-0178,+1 415-555-0278,Lead Developer,Engineering,TechBridge Labs
+Maria,Rodriguez,m.rodriguez@techbridgelabs.com,+1 415-555-0179,+1 415-555-0279,Product Manager,Product,TechBridge Labs
+Erik,Pedersen,erik.pedersen@havnekraft.no,+47 22 55 3301,+47 91 55 3301,Plant Manager,Manufacturing,Havnekraft Marine
+Carmen,Ruiz,c.ruiz@bluehorizontravel.es,+34 91 555 6201,+34 66 555 6201,Marketing Director,Marketing,Blue Horizon Travel
+David,Goldstein,d.goldstein@pinnaclefg.com,+1 212-555-0200,+1 917-555-0200,Senior Analyst,Finance,Pinnacle Financial Group
+Rachel,Park,r.park@pinnaclefg.com,+1 212-555-0201,+1 917-555-0201,Portfolio Manager,Investments,Pinnacle Financial Group
+Mette,Christensen,mette.christensen@danskmedicin.dk,+45 35 44 7701,+45 22 44 7701,Head of Research,R&D,Dansk Medicin A/S
+Oliver,Brooks,o.brooks@redwoodretail.com,+1 503-555-0146,+1 503-555-0246,Store Director,Retail Operations,Redwood Retail Co
+Ingrid,Haugen,i.haugen@fjordview.no,+47 55 22 1101,+47 92 22 1101,Principal Architect,Design,Fjordview Architecture
+Sean,Murphy,s.murphy@cloudninesw.ie,+353 1 555 8901,+353 87 555 8901,CEO,Executive,CloudNine Software
+Lena,Berger,l.berger@alpengastro.at,+43 1 555 4401,+43 664 555 4401,General Manager,Operations,Alpen Gastro GmbH
+Marco,Ferretti,m.ferretti@velocemotors.it,+39 02 5555 3301,+39 338 555 3301,Sales Director,Sales,Veloce Motors Italia
+Nikolaj,Sørensen,n.sorensen@harbourshipping.dk,+45 39 17 5501,+45 23 17 5501,Logistics Coordinator,Logistics,Harbour Shipping Ltd
+Amanda,Foster,a.foster@summitedu.com,+1 617-555-0189,+1 617-555-0289,Dean of Programs,Academic Affairs,Summit Education Group
+Katrine,Lund,k.lund@orstedbiotech.dk,+45 45 77 2201,+45 24 77 2201,Lab Director,Research,Ørsted Biotech
+Thomas,O'Brien,t.obrien@pacificfresh.com.au,+61 2 5555 7701,+61 4 5555 7701,Supply Chain Manager,Logistics,Pacific Fresh Foods
+Friedrich,Schwarz,f.schwarz@schwarzbauer.de,+49 89 5555 1101,+49 171 555 1101,Senior Partner,Legal,Schwarz & Bauer Legal
+Anna,Lindqvist,a.lindqvist@lumenmedia.se,+46 8 555 3201,+46 70 555 3201,Creative Director,Content,Lumen Media Group

@@ -1,0 +1,21 @@
+Subject,Description,Status,Priority,Origin,Account.Name,Contact.Email
+Login issues on platform,User unable to log in after password reset. Receives invalid token error.,New,High,Web,Nordvik Solutions,lars.henriksen@nordvik.dk
+Fleet tracking GPS lag,GPS coordinates updating with 15-minute delay instead of real-time.,Working,High,Phone,Greenfield Logistics,j.whitfield@greenfieldlogistics.co.uk
+Invoice formatting error,Monthly invoice PDF shows incorrect VAT calculation on line items.,New,Medium,Email,Maple & Oak Consulting,priya.sharma@mapleoak.ca
+Solar panel data export fails,CSV export from monitoring dashboard times out for datasets over 10k rows.,Working,Medium,Web,Solaris Energy Group,t.krueger@solaris-energy.de
+API rate limit exceeded,Integration hitting rate limits during peak hours causing sync failures.,Escalated,High,Web,TechBridge Labs,kevin.tran@techbridgelabs.com
+Sensor calibration drift,Hull pressure sensors showing 5% drift after 30 days of operation.,New,High,Phone,Havnekraft Marine,erik.pedersen@havnekraft.no
+Booking confirmation not sent,Customers not receiving email confirmations for online bookings.,Working,High,Email,Blue Horizon Travel,c.ruiz@bluehorizontravel.es
+Dashboard loading timeout,Risk dashboard takes over 60 seconds to load with full portfolio data.,New,Medium,Web,Pinnacle Financial Group,d.goldstein@pinnaclefg.com
+Clinical trial report misalignment,Report columns misaligned when exported to PDF in landscape mode.,Closed,Low,Email,Dansk Medicin A/S,mette.christensen@danskmedicin.dk
+POS barcode scanner issue,Handheld scanners intermittently fail to read new barcode format.,Working,High,Phone,Redwood Retail Co,o.brooks@redwoodretail.com
+SSO configuration error,Single sign-on returning 403 for users with multi-factor authentication enabled.,Escalated,High,Web,CloudNine Software,s.murphy@cloudninesw.ie
+Menu translation incomplete,English menu items still showing on German-language version of website.,New,Low,Email,Alpen Gastro GmbH,l.berger@alpengastro.at
+Test drive scheduler conflict,Double-bookings appearing when two customers select the same time slot.,Working,Medium,Web,Veloce Motors Italia,m.ferretti@velocemotors.it
+Container tracking data gap,12-hour data gap in tracking for containers on transatlantic routes.,Escalated,High,Phone,Harbour Shipping Ltd,n.sorensen@harbourshipping.dk
+Student enrollment sync failure,New enrollments not syncing from website form to student database.,New,High,Web,Summit Education Group,a.foster@summitedu.com
+Lab results notification delay,Automated notifications for completed lab results delayed by 4+ hours.,Working,Medium,Email,Ørsted Biotech,k.lund@orstedbiotech.dk
+Cold chain temperature alert,Temperature monitoring alert thresholds not triggering for shipments to Asia.,New,High,Phone,Pacific Fresh Foods,t.obrien@pacificfresh.com.au
+Document version control issue,Multiple attorneys editing same document without proper version locking.,Working,Medium,Web,Schwarz & Bauer Legal,f.schwarz@schwarzbauer.de
+Video upload timeout,Large video files over 2GB failing to upload to content management system.,New,Medium,Web,Lumen Media Group,a.lindqvist@lumenmedia.se
+Claims portal downtime,Customer-facing claims portal returning 502 errors during business hours.,Escalated,High,Web,Baltica Insurance,
