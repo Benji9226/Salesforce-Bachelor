@@ -1,8 +1,5 @@
 public with sharing class SafeReportExportController {
 
-    private static final Integer MAX_AI_CALLS = 50;
-    private static Integer aiCallCount = 0;
-
     public class ReportOption {
         @AuraEnabled public String reportId;
         @AuraEnabled public String reportName;
@@ -61,29 +58,101 @@ public with sharing class SafeReportExportController {
             columnTypes.add(col.getDataType().name());
         }
 
-        output.rows = new List<List<String>>();
+        List<List<String>> rawRows = new List<List<String>>();
         Reports.ReportFactWithDetails factMap = (Reports.ReportFactWithDetails) results.getFactMap().get('T!T');
 
         if (factMap != null && factMap.getRows() != null) {
             for (Reports.ReportDetailRow row : factMap.getRows()) {
                 List<Reports.ReportDataCell> cells = row.getDataCells();
                 List<String> rowValues = new List<String>();
-
                 for (Integer i = 0; i < cells.size(); i++) {
-                    String cellValue = String.valueOf(cells[i].getLabel());
-                    if (applyMasking) {
-                        String colType = i < columnTypes.size() ? columnTypes[i] : 'STRING';
-                        String colHeader = i < output.headers.size() ? output.headers[i].toLowerCase() : '';
-                        cellValue = maskCellValue(cellValue, colType, colHeader);
-                    }
-                    rowValues.add(cellValue);
+                    rowValues.add(String.valueOf(cells[i].getLabel()));
                 }
-                output.rows.add(rowValues);
+                rawRows.add(rowValues);
             }
+        }
+
+        if (!applyMasking) {
+            output.rows = rawRows;
+            output.totalRows = rawRows.size();
+            return output;
+        }
+
+        Set<Integer> aiColumns = identifyAIColumns(output.headers);
+
+        Map<String, String> aiCache = new Map<String, String>();
+        if (!aiColumns.isEmpty()) {
+            List<String> textsToMask = collectDescriptionTexts(rawRows, aiColumns);
+            if (!textsToMask.isEmpty()) {
+                aiCache = batchMaskTexts(textsToMask);
+            }
+        }
+
+        output.rows = new List<List<String>>();
+        for (List<String> rawRow : rawRows) {
+            List<String> maskedRow = new List<String>();
+            for (Integer i = 0; i < rawRow.size(); i++) {
+                String cellValue = rawRow[i];
+                String colType = i < columnTypes.size() ? columnTypes[i] : 'STRING';
+                String colHeader = i < output.headers.size() ? output.headers[i].toLowerCase() : '';
+
+                if (aiColumns.contains(i)) {
+                    maskedRow.add(aiCache.containsKey(cellValue) ? aiCache.get(cellValue) : maskFreeText(cellValue));
+                } else {
+                    maskedRow.add(maskCellValue(cellValue, colType, colHeader));
+                }
+            }
+            output.rows.add(maskedRow);
         }
 
         output.totalRows = output.rows.size();
         return output;
+    }
+
+    private static Set<Integer> identifyAIColumns(List<String> headers) {
+        Set<Integer> aiCols = new Set<Integer>();
+        for (Integer i = 0; i < headers.size(); i++) {
+            String h = headers[i].toLowerCase();
+            if (h.contains('description') || h.contains('notes') || h.contains('comment')) {
+                aiCols.add(i);
+            }
+        }
+        return aiCols;
+    }
+
+    private static List<String> collectDescriptionTexts(List<List<String>> rows, Set<Integer> aiColumns) {
+        Set<String> seen = new Set<String>();
+        List<String> unique = new List<String>();
+        for (List<String> row : rows) {
+            for (Integer col : aiColumns) {
+                if (col < row.size()) {
+                    String val = row[col];
+                    if (val != null && val != '' && val != '-' && !seen.contains(val)) {
+                        seen.add(val);
+                        unique.add(val);
+                    }
+                }
+            }
+        }
+        return unique;
+    }
+
+    private static Map<String, String> batchMaskTexts(List<String> texts) {
+        Map<String, String> cache = new Map<String, String>();
+        List<PIIDetectionService.PIIMaskingResult> results = PIIDetectionService.detectAndMaskBatch(texts);
+
+        for (Integer i = 0; i < texts.size() && i < results.size(); i++) {
+            PIIDetectionService.PIIMaskingResult r = results[i];
+            if (r.success && r.hasPII) {
+                cache.put(texts[i], r.maskedText);
+            } else if (r.success && !r.hasPII) {
+                cache.put(texts[i], texts[i]);
+            } else {
+                cache.put(texts[i], maskFreeText(texts[i]));
+            }
+        }
+
+        return cache;
     }
 
     private static String maskCellValue(String value, String colType, String header) {
@@ -103,7 +172,6 @@ public with sharing class SafeReportExportController {
             'ssn', 'social security', 'cpr', 'national id',
             'credit card', 'card number', 'iban', 'bank',
             'salary', 'income', 'compensation',
-            'description', 'notes', 'comment',
             'street', 'address', 'mailing', 'home'
         };
 
@@ -128,9 +196,6 @@ public with sharing class SafeReportExportController {
         }
         if (header.contains('salary') || header.contains('income') || header.contains('compensation')) {
             return '******';
-        }
-        if (header.contains('description') || header.contains('notes') || header.contains('comment')) {
-            return maskWithAI(value);
         }
 
         return '***';
@@ -157,23 +222,6 @@ public with sharing class SafeReportExportController {
     private static String maskDate(String dateStr) {
         if (dateStr.length() < 2) return '****-**-**';
         return '****-**-' + dateStr.substring(dateStr.length() - 2);
-    }
-
-    private static String maskWithAI(String value) {
-        if (aiCallCount >= MAX_AI_CALLS) {
-            return maskFreeText(value);
-        }
-
-        aiCallCount++;
-        PIIDetectionService.PIIMaskingResult result = PIIDetectionService.detectAndMask(value);
-
-        if (result.success && result.hasPII) {
-            return result.maskedText;
-        }
-        if (result.success && !result.hasPII) {
-            return value;
-        }
-        return maskFreeText(value);
     }
 
     private static String maskFreeText(String text) {

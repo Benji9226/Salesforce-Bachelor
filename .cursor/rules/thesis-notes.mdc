@@ -1,0 +1,33 @@
+---
+description: Log noteworthy findings and insights to THESIS_NOTES.md
+alwaysApply: true
+---
+
+# Thesis Notes
+
+When we encounter a finding, insight, or result that would strengthen the bachelor thesis, add it to `THESIS_NOTES.md` in the project root.
+
+## When to Log
+
+- Platform limitations discovered (things Salesforce can't do)
+- Architectural decisions and why one approach was chosen over another
+- Performance measurements or before/after comparisons
+- Security or compliance-relevant findings (data residency, trust boundaries)
+- Real-world friction encountered during development (sandbox quirks, API constraints)
+- Successful demonstrations that a feature works as intended
+
+## Format
+
+```markdown
+## YYYY-MM-DD — Short descriptive title
+
+1-3 paragraphs explaining the finding, why it matters, and how it relates to the thesis topic (data privacy in Salesforce sandboxes). Include concrete numbers, API names, or error messages where relevant.
+```
+
+## Rules
+
+- New entries go at the bottom of the file (chronological order).
+- Write in a factual, report-friendly tone — these notes will feed directly into the thesis.
+- Focus on the *why it matters* angle, not just the technical detail.
+- If `THESIS_NOTES.md` does not exist yet, create it with a top-level `# Thesis Notes — Strong Points` heading.
+- Do not duplicate entries that already exist in the file.
