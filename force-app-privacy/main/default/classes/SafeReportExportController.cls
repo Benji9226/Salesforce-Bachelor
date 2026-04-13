@@ -1,5 +1,8 @@
 public with sharing class SafeReportExportController {
 
+    private static final Integer MAX_AI_CALLS = 50;
+    private static Integer aiCallCount = 0;
+
     public class ReportOption {
         @AuraEnabled public String reportId;
         @AuraEnabled public String reportName;
@@ -127,7 +130,7 @@ public with sharing class SafeReportExportController {
             return '******';
         }
         if (header.contains('description') || header.contains('notes') || header.contains('comment')) {
-            return maskFreeText(value);
+            return maskWithAI(value);
         }
 
         return '***';
@@ -154,6 +157,23 @@ public with sharing class SafeReportExportController {
     private static String maskDate(String dateStr) {
         if (dateStr.length() < 2) return '****-**-**';
         return '****-**-' + dateStr.substring(dateStr.length() - 2);
+    }
+
+    private static String maskWithAI(String value) {
+        if (aiCallCount >= MAX_AI_CALLS) {
+            return maskFreeText(value);
+        }
+
+        aiCallCount++;
+        PIIDetectionService.PIIMaskingResult result = PIIDetectionService.detectAndMask(value);
+
+        if (result.success && result.hasPII) {
+            return result.maskedText;
+        }
+        if (result.success && !result.hasPII) {
+            return value;
+        }
+        return maskFreeText(value);
     }
 
     private static String maskFreeText(String text) {

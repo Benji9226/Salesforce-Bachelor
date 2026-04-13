@@ -10,7 +10,7 @@
         <name>main</name>
         <type>Region</type>
     </flexiPageRegions>
-    <masterLabel>Export Mask Reports</masterLabel>
+    <masterLabel>Export Masked Reports</masterLabel>
     <template>
         <name>flexipage:defaultAppHomeTemplate</name>
     </template>

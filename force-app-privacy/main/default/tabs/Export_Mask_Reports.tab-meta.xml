@@ -2,5 +2,5 @@
 <CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
     <flexiPage>Export_Mask_Reports</flexiPage>
     <motif>Custom70: Shield</motif>
-    <label>Export Mask Reports</label>
+    <label>Export Masked Reports</label>
 </CustomTab>
