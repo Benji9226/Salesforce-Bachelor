@@ -1,0 +1,47 @@
+---
+description: Track how each development activity maps to DSRM phases in DSRM_LOG.md
+alwaysApply: true
+---
+
+# DSRM Tracking
+
+This project follows the Design Science Research Methodology (Peffers et al., 2008). After every meaningful development activity, append an entry to `DSRM_LOG.md` in the project root that maps the work to one of the six DSRM phases.
+
+## DSRM Phases
+
+1. **Problem Identification & Motivation** — Defining the research problem and justifying the value of a solution.
+2. **Define Objectives of a Solution** — Specifying what a successful artifact should accomplish, derived from the problem definition.
+3. **Design & Development** — Creating the artifact (architecture, code, models).
+4. **Demonstration** — Using the artifact in a suitable context to show it can solve the problem.
+5. **Evaluation** — Observing and measuring how well the artifact supports a solution (performance, coverage, limitations).
+6. **Communication** — Reporting the process and results (thesis writing, documentation).
+
+## When to Log
+
+- A new artifact or feature is designed or built (Phase 3)
+- A platform limitation or research problem is identified (Phase 1)
+- Solution requirements or objectives are defined or refined (Phase 2)
+- An artifact is tested against real data or demonstrated working (Phase 4)
+- Performance is measured, limitations are found, or before/after comparisons are made (Phase 5)
+- Thesis sections, documentation, or formal write-ups are produced (Phase 6)
+- An iteration occurs (e.g., evaluation reveals a flaw, leading back to design)
+
+## Format
+
+```markdown
+## YYYY-MM-DD — Short title
+
+**DSRM Phase**: Phase N — Phase Name
+**Iteration**: (if cycling back from a later phase, note which phase triggered the return)
+
+1-2 sentences describing the activity and how it relates to this DSRM phase.
+```
+
+## Rules
+
+- New entries go at the bottom of the file (chronological order).
+- Use the exact phase names listed above for consistency.
+- When work spans multiple phases in one session, create separate entries for each phase.
+- If an evaluation leads back to redesign, explicitly note the iteration (e.g., "Evaluation of batch performance revealed 65s latency → iterated back to Design & Development").
+- If `DSRM_LOG.md` does not exist yet, create it with a top-level `# DSRM Log` heading and a brief preamble.
+- Keep entries concise — the detail goes in `THESIS_NOTES.md` and `CHANGELOG.md`; this log tracks the methodological mapping.
