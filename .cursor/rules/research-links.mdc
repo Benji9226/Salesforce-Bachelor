@@ -24,9 +24,9 @@ When performing web research (using WebSearch, WebFetch, or citing external sour
 
 **Context**: 1 sentence on why this was researched.
 
-| # | Link | Description |
-|---|------|-------------|
-| 1 | URL  | What this resource covers |
+| # | Link | Year | Description |
+|---|------|------|-------------|
+| 1 | URL  | YYYY | What this resource covers |
 ```
 
 ## Rules
@@ -36,3 +36,4 @@ When performing web research (using WebSearch, WebFetch, or citing external sour
 - Do not duplicate entries — if the same link was already logged, skip it.
 - Always present the 1–5 best links to the user in the chat response as well.
 - Keep descriptions concise (one sentence max per link).
+- Include the year the article was written or last updated, if available on the page. Use `—` if no date can be determined.
