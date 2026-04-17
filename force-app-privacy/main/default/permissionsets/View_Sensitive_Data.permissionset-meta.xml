@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>View Sensitive Data</label>
+    <description>Grants the View_Sensitive_Data custom permission so formula fields display real values instead of masked placeholders. Assign to admin users only.</description>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>View_Sensitive_Data</name>
+    </customPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account.Account_Name_Masked__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account.Billing_City_Masked__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account.Billing_Street_Masked__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account.Phone_Masked__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
+</PermissionSet>

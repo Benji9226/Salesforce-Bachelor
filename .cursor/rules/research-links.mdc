@@ -1,0 +1,38 @@
+---
+description: Save web research links to RESEARCH_LINKS.md whenever the agent searches the web
+alwaysApply: true
+---
+
+# Research Link Tracking
+
+When performing web research (using WebSearch, WebFetch, or citing external sources), save the best links to `RESEARCH_LINKS.md` in the project root.
+
+## When to Log
+
+- After any web search that yields useful results
+- When referencing external documentation, articles, or resources
+
+## What to Log
+
+- The **1–5 best links** from each research activity
+- A short description of what was being researched and why
+
+## Format
+
+```markdown
+## YYYY-MM-DD — Research topic
+
+**Context**: 1 sentence on why this was researched.
+
+| # | Link | Description |
+|---|------|-------------|
+| 1 | URL  | What this resource covers |
+```
+
+## Rules
+
+- New entries go at the top of the file (newest first), below the heading.
+- If `RESEARCH_LINKS.md` does not exist yet, create it with a top-level `# Research Links` heading.
+- Do not duplicate entries — if the same link was already logged, skip it.
+- Always present the 1–5 best links to the user in the chat response as well.
+- Keep descriptions concise (one sentence max per link).
