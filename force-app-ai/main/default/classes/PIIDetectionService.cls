@@ -162,7 +162,25 @@ public with sharing class PIIDetectionService {
         return cleaned;
     }
 
+    // Test-only mock hooks. aiplatform.ModelsAPI is a first-party SDK class that
+    // cannot be intercepted via HttpCalloutMock, so we expose a FIFO queue of
+    // responses (and exceptions) that tests can push before invoking the service.
+    // Both queues are only consulted when Test.isRunningTest() returns true.
+    @TestVisible
+    private static List<String> mockResponseQueue;
+    @TestVisible
+    private static List<Exception> mockExceptionQueue;
+
     private static String callEinstein(String prompt) {
+        if (Test.isRunningTest()) {
+            if (mockExceptionQueue != null && !mockExceptionQueue.isEmpty()) {
+                throw mockExceptionQueue.remove(0);
+            }
+            if (mockResponseQueue != null && !mockResponseQueue.isEmpty()) {
+                return mockResponseQueue.remove(0);
+            }
+        }
+
         aiplatform.ModelsAPI.createGenerations_Request request =
             new aiplatform.ModelsAPI.createGenerations_Request();
         request.modelName = MODEL_NAME;

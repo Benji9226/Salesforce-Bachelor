@@ -109,6 +109,7 @@ public with sharing class SafeReportExportController {
         return output;
     }
 
+    @TestVisible
     private static Set<Integer> identifyAIColumns(List<String> headers) {
         Set<Integer> aiCols = new Set<Integer>();
         for (Integer i = 0; i < headers.size(); i++) {
@@ -120,6 +121,7 @@ public with sharing class SafeReportExportController {
         return aiCols;
     }
 
+    @TestVisible
     private static List<String> collectDescriptionTexts(List<List<String>> rows, Set<Integer> aiColumns) {
         Set<String> seen = new Set<String>();
         List<String> unique = new List<String>();
@@ -155,6 +157,7 @@ public with sharing class SafeReportExportController {
         return cache;
     }
 
+    @TestVisible
     private static String maskCellValue(String value, String colType, String header) {
         if (value == null || value == '' || value == '-') return value;
 
@@ -165,6 +168,7 @@ public with sharing class SafeReportExportController {
         return maskFreeText(value);
     }
 
+    @TestVisible
     private static Boolean isSensitiveHeader(String header) {
         Set<String> sensitiveKeywords = new Set<String>{
             'email', 'e-mail', 'phone', 'mobile', 'fax',
@@ -181,6 +185,7 @@ public with sharing class SafeReportExportController {
         return false;
     }
 
+    @TestVisible
     private static String maskByType(String value, String colType, String header) {
         if (header.contains('email') || header.contains('e-mail')) {
             return maskEmail(value);
@@ -201,6 +206,7 @@ public with sharing class SafeReportExportController {
         return '***';
     }
 
+    @TestVisible
     private static String maskEmail(String email) {
         if (!email.contains('@')) return '***@***.***';
         String[] parts = email.split('@');
@@ -213,17 +219,20 @@ public with sharing class SafeReportExportController {
         return local + '@' + domain;
     }
 
+    @TestVisible
     private static String maskPhone(String phone) {
         if (phone.length() < 4) return '***-****';
         return phone.substring(0, phone.length() - 4).replaceAll('[0-9]', '*') +
                phone.substring(phone.length() - 4);
     }
 
+    @TestVisible
     private static String maskDate(String dateStr) {
         if (dateStr.length() < 2) return '****-**-**';
         return '****-**-' + dateStr.substring(dateStr.length() - 2);
     }
 
+    @TestVisible
     private static String maskFreeText(String text) {
         String masked = text;
         masked = masked.replaceAll('\\b\\d{6}-\\d{4}\\b', '******-****');
