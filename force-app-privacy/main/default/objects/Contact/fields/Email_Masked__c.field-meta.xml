@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Email_Masked__c</fullName>
+    <label>Email (Masked)</label>
+    <type>Text</type>
+    <formula>IF(
+  $Permission.View_Sensitive_Data,
+  Email,
+  IF(LEN(Email) &gt; 0, LEFT(Email, 1) &amp; &quot;***@***.***&quot;, &quot;&quot;)
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <required>false</required>
+    <externalId>false</externalId>
+    <trackTrending>false</trackTrending>
+    <unique>false</unique>
+</CustomField>
