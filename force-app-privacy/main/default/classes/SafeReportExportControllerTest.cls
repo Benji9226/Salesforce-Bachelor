@@ -1386,5 +1386,259 @@ private class SafeReportExportControllerTest {
         System.assert(actual.isEmpty(), 'a term with no matches must return an empty list');
     }
 
+    // =====================================================================
+    // saveCatalogueRules — Slice 3 (session → catalogue promotion)
+    //
+    // These tests pin the contract that the LWC "Save as Catalogue Rules"
+    // button depends on, plus the two test seams (TEST_HAS_CATALOGUE_PERM
+    // and TEST_LAST_CONTAINER + enqueueDeployment) that let us exercise
+    // the Apex Metadata API path without actually touching org metadata.
+    // =====================================================================
+
+    @IsTest
+    static void saveCatalogueRules_noPermission_throws() {
+        // Arrange
+        SafeReportExportController.TEST_HAS_CATALOGUE_PERM = false;
+        List<SafeReportExportController.CataloguePromotionRequest> rules =
+            new List<SafeReportExportController.CataloguePromotionRequest>();
+
+        // Act + Assert
+        Boolean threw = false;
+        try {
+            SafeReportExportController.saveCatalogueRules(rules);
+        } catch (AuraHandledException e) {
+            threw = true;
+        }
+        System.assert(threw,
+            'callers without Modify_Masking_Catalogue must be rejected before any work');
+    }
+
+    @IsTest
+    static void saveCatalogueRules_emptyList_returnsZeroResult() {
+        SafeReportExportController.TEST_HAS_CATALOGUE_PERM = true;
+
+        SafeReportExportController.CataloguePromotionResult actual =
+            SafeReportExportController.saveCatalogueRules(null);
+
+        System.assertEquals(0, actual.rulesEnqueued);
+        System.assertEquals(0, actual.rulesSkipped);
+        System.assertEquals(null, actual.deploymentId,
+            'no deploy must be enqueued when there is nothing to deploy');
+        System.assert(actual.skippedReasons.isEmpty());
+        System.assert(actual.enqueuedFullNames.isEmpty());
+    }
+
+    @IsTest
+    static void saveCatalogueRules_skipsNoneAndEinstein() {
+        // Arrange — three "rules" of which only the third is promotable.
+        SafeReportExportController.TEST_HAS_CATALOGUE_PERM = true;
+        SafeReportExportController.CataloguePromotionRequest none = newReq('Account', 'Phone', 'None', null);
+        SafeReportExportController.CataloguePromotionRequest einstein = newReq('Account', 'Description', 'EinsteinAI', null);
+        SafeReportExportController.CataloguePromotionRequest hash = newReq('Account', 'Phone', 'HashStrategy', null);
+
+        // Act
+        SafeReportExportController.CataloguePromotionResult actual =
+            SafeReportExportController.saveCatalogueRules(
+                new List<SafeReportExportController.CataloguePromotionRequest>{ none, einstein, hash }
+            );
+
+        // Assert
+        System.assertEquals(1, actual.rulesEnqueued, 'Only HashStrategy is promotable');
+        System.assertEquals(2, actual.rulesSkipped, 'None and EinsteinAI must be reported as skipped');
+        System.assertEquals(2, actual.skippedReasons.size());
+        System.assertEquals('TEST_DEPLOY_ID', actual.deploymentId);
+        System.assertEquals(1, actual.enqueuedFullNames.size());
+        System.assertEquals('Masking_Rule__mdt.MWB_Account_Phone', actual.enqueuedFullNames[0]);
+    }
+
+    @IsTest
+    static void saveCatalogueRules_skipsBlankObjectOrField() {
+        SafeReportExportController.TEST_HAS_CATALOGUE_PERM = true;
+        List<SafeReportExportController.CataloguePromotionRequest> rules =
+            new List<SafeReportExportController.CataloguePromotionRequest>{
+                newReq('', 'Phone', 'HashStrategy', null),
+                newReq('Account', '', 'HashStrategy', null),
+                newReq(null, null, 'HashStrategy', null)
+            };
+
+        SafeReportExportController.CataloguePromotionResult actual =
+            SafeReportExportController.saveCatalogueRules(rules);
+
+        System.assertEquals(0, actual.rulesEnqueued);
+        System.assertEquals(3, actual.rulesSkipped);
+        System.assertEquals(null, actual.deploymentId,
+            'a payload with zero promotable rows must not enqueue an empty deploy');
+    }
+
+    @IsTest
+    static void saveCatalogueRules_skipsUnknownStrategy() {
+        SafeReportExportController.TEST_HAS_CATALOGUE_PERM = true;
+        SafeReportExportController.CataloguePromotionRequest req =
+            newReq('Account', 'Phone', 'NoSuchStrategy', null);
+
+        SafeReportExportController.CataloguePromotionResult actual =
+            SafeReportExportController.saveCatalogueRules(
+                new List<SafeReportExportController.CataloguePromotionRequest>{ req }
+            );
+
+        System.assertEquals(0, actual.rulesEnqueued);
+        System.assertEquals(1, actual.rulesSkipped);
+        System.assert(actual.skippedReasons[0].contains('NoSuchStrategy'),
+            'rejection reason must name the offending strategy class');
+    }
+
+    @IsTest
+    static void saveCatalogueRules_dedupesSameObjectField() {
+        // Arrange — same {Object, Field} twice in one payload. The second
+        // must be skipped because the deploy container would fail on a
+        // duplicate fullName.
+        SafeReportExportController.TEST_HAS_CATALOGUE_PERM = true;
+        List<SafeReportExportController.CataloguePromotionRequest> rules =
+            new List<SafeReportExportController.CataloguePromotionRequest>{
+                newReq('Account', 'Phone', 'HashStrategy', null),
+                newReq('Account', 'Phone', 'RedactStrategy', null)
+            };
+
+        SafeReportExportController.CataloguePromotionResult actual =
+            SafeReportExportController.saveCatalogueRules(rules);
+
+        System.assertEquals(1, actual.rulesEnqueued, 'first wins');
+        System.assertEquals(1, actual.rulesSkipped, 'second is reported as duplicate');
+        System.assert(actual.skippedReasons[0].toLowerCase().contains('duplicate'));
+    }
+
+    @IsTest
+    static void saveCatalogueRules_validRule_buildsExpectedCustomMetadata() {
+        // Arrange
+        SafeReportExportController.TEST_HAS_CATALOGUE_PERM = true;
+        SafeReportExportController.TEST_LAST_CONTAINER = null;
+        SafeReportExportController.CataloguePromotionRequest req =
+            newReq('Contact', 'Email_Masked__c', 'HashStrategy', '{"length":10}');
+
+        // Act
+        SafeReportExportController.CataloguePromotionResult actual =
+            SafeReportExportController.saveCatalogueRules(
+                new List<SafeReportExportController.CataloguePromotionRequest>{ req }
+            );
+
+        // Assert — the result envelope
+        System.assertEquals(1, actual.rulesEnqueued);
+        System.assertEquals(0, actual.rulesSkipped);
+        System.assertEquals('TEST_DEPLOY_ID', actual.deploymentId);
+        System.assertEquals('Masking_Rule__mdt.MWB_Contact_Email_Masked_c', actual.enqueuedFullNames[0]);
+
+        // Assert — the captured Metadata.DeployContainer carries one CMDT
+        // record with all six fields populated as expected
+        System.assertNotEquals(null, SafeReportExportController.TEST_LAST_CONTAINER,
+            'enqueueDeployment seam must capture the container it was handed');
+        List<Metadata.Metadata> mdList = SafeReportExportController.TEST_LAST_CONTAINER.getMetadata();
+        System.assertEquals(1, mdList.size(), 'one promoted rule = one CMDT in the deploy');
+        Metadata.CustomMetadata cmd = (Metadata.CustomMetadata) mdList[0];
+        System.assertEquals('Masking_Rule__mdt.MWB_Contact_Email_Masked_c', cmd.fullName);
+        System.assertEquals('Contact Email_Masked__c', cmd.label);
+
+        Map<String, Object> values = new Map<String, Object>();
+        for (Metadata.CustomMetadataValue v : cmd.values) {
+            values.put(v.field, v.value);
+        }
+        System.assertEquals('Contact', values.get('Object_API_Name__c'));
+        System.assertEquals('Email_Masked__c', values.get('Field_API_Name__c'));
+        System.assertEquals('HashStrategy', values.get('Strategy_Class__c'));
+        System.assertEquals('{"length":10}', values.get('Parameters_JSON__c'));
+        System.assertEquals(true, values.get('Is_Active__c'));
+        System.assertEquals(100, values.get('Order__c'));
+    }
+
+    @IsTest
+    static void saveCatalogueRules_blankParamsJson_storesNull() {
+        SafeReportExportController.TEST_HAS_CATALOGUE_PERM = true;
+        SafeReportExportController.TEST_LAST_CONTAINER = null;
+
+        SafeReportExportController.saveCatalogueRules(
+            new List<SafeReportExportController.CataloguePromotionRequest>{
+                newReq('Account', 'Phone', 'RedactStrategy', '   ')
+            }
+        );
+
+        Metadata.CustomMetadata cmd =
+            (Metadata.CustomMetadata) SafeReportExportController.TEST_LAST_CONTAINER.getMetadata()[0];
+        for (Metadata.CustomMetadataValue v : cmd.values) {
+            if (v.field == 'Parameters_JSON__c') {
+                System.assertEquals(null, v.value,
+                    'blank/whitespace paramsJson must be persisted as null, not as the literal string');
+                return;
+            }
+        }
+        System.assert(false, 'Parameters_JSON__c value not present in the CMDT payload');
+    }
+
+    @IsTest
+    static void buildDeveloperName_sanitisesCustomFieldSuffix() {
+        String actual = SafeReportExportController.buildDeveloperName('Contact', 'Email_Masked__c');
+        System.assertEquals('MWB_Contact_Email_Masked_c', actual,
+            '__c must be folded to _c so the DeveloperName is alphanumeric+underscore');
+    }
+
+    @IsTest
+    static void buildDeveloperName_replacesNonAlphanumerics() {
+        String actual = SafeReportExportController.buildDeveloperName('Account', 'Some.Field');
+        System.assertEquals('MWB_Account_Some_Field', actual,
+            'dots and other non-alphanumerics must be replaced by underscore');
+    }
+
+    @IsTest
+    static void validatePromotionRequest_nullEntry_returnsReason() {
+        String reason = SafeReportExportController.validatePromotionRequest(null);
+        System.assert(reason != null, 'a null entry must be rejected, not throw');
+    }
+
+    @IsTest
+    static void validatePromotionRequest_validEntry_returnsNull() {
+        SafeReportExportController.CataloguePromotionRequest req =
+            newReq('Account', 'Phone', 'HashStrategy', null);
+        System.assertEquals(null,
+            SafeReportExportController.validatePromotionRequest(req),
+            'a fully-formed valid request must return null (= promotable)');
+    }
+
+    @IsTest
+    static void hasCataloguePermission_unsetSeam_fallsBackToFeatureManagement() {
+        // Arrange — leave the seam at its default null value so the
+        // production code path runs. We don't assert on the boolean
+        // because the answer depends on the running test user's
+        // profile, but we do assert that the call returns a Boolean
+        // and does not throw.
+        SafeReportExportController.TEST_HAS_CATALOGUE_PERM = null;
+
+        Boolean answer = SafeReportExportController.hasCataloguePermission();
+        System.assert(answer == true || answer == false,
+            'production permission check must return a deterministic boolean');
+    }
+
+    @IsTest
+    static void enqueueDeployment_underTest_returnsFakeIdAndCapturesContainer() {
+        Metadata.DeployContainer container = new Metadata.DeployContainer();
+        SafeReportExportController.TEST_LAST_CONTAINER = null;
+
+        String id = SafeReportExportController.enqueueDeployment(container);
+
+        System.assertEquals('TEST_DEPLOY_ID', id,
+            'under Test.isRunningTest the seam must short-circuit to a deterministic Id');
+        System.assertEquals(container, SafeReportExportController.TEST_LAST_CONTAINER,
+            'the captured container must be the same instance that was handed in');
+    }
+
+    private static SafeReportExportController.CataloguePromotionRequest newReq(
+        String objectApi, String fieldApi, String strategy, String paramsJson
+    ) {
+        SafeReportExportController.CataloguePromotionRequest r =
+            new SafeReportExportController.CataloguePromotionRequest();
+        r.objectApi = objectApi;
+        r.fieldApi = fieldApi;
+        r.strategyClass = strategy;
+        r.paramsJson = paramsJson;
+        return r;
+    }
+
     private class SafeReportExportControllerTestException extends Exception {}
 }

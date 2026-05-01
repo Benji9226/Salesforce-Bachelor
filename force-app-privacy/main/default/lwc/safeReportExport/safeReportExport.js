@@ -1,9 +1,12 @@
 import { LightningElement, track } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import searchReports from '@salesforce/apex/SafeReportExportController.searchReports';
 import runRawReport from '@salesforce/apex/SafeReportExportController.runRawReport';
 import applyStrategyToColumn from '@salesforce/apex/SafeReportExportController.applyStrategyToColumn';
 import loadRecord from '@salesforce/apex/SafeReportExportController.loadRecord';
 import searchRecords from '@salesforce/apex/SafeReportExportController.searchRecords';
+import saveCatalogueRules from '@salesforce/apex/SafeReportExportController.saveCatalogueRules';
+import hasCataloguePerm from '@salesforce/customPermission/Modify_Masking_Catalogue';
 
 const STRATEGY_OPTIONS = [
     { label: 'None (raw)', value: 'None' },
@@ -124,6 +127,26 @@ export default class SafeReportExport extends LightningElement {
 
     get detailResetDisabled() {
         return !this.detailHasRecord || !this.anyDetailMasked;
+    }
+
+    get canModifyCatalogue() {
+        return hasCataloguePerm === true;
+    }
+
+    get savePromotableFields() {
+        return this.detailFields.filter(f =>
+            f.strategy && f.strategy !== 'None' && f.strategy !== 'EinsteinAI'
+        );
+    }
+
+    get saveCatalogueDisabled() {
+        return !this.detailHasRecord || this.savePromotableFields.length === 0;
+    }
+
+    get saveCatalogueLabel() {
+        const n = this.savePromotableFields.length;
+        if (!this.detailHasRecord) return 'Save as Catalogue Rules';
+        return `Save ${n} Rule${n === 1 ? '' : 's'} to Catalogue`;
     }
 
     get detailSubtitle() {
@@ -510,5 +533,51 @@ export default class SafeReportExport extends LightningElement {
             isMasked: false
         }));
         this.detailError = undefined;
+    }
+
+    async handleSaveCatalogueRules() {
+        const promotable = this.savePromotableFields;
+        if (promotable.length === 0) return;
+
+        const rules = promotable.map(f => ({
+            objectApi: this.detailObjectApi,
+            fieldApi: f.fieldApiName,
+            strategyClass: f.strategy,
+            paramsJson: null
+        }));
+
+        try {
+            const result = await saveCatalogueRules({ rules });
+            const enq = result && result.rulesEnqueued != null ? result.rulesEnqueued : 0;
+            const skp = result && result.rulesSkipped != null ? result.rulesSkipped : 0;
+            const deployId = result && result.deploymentId ? result.deploymentId : '(none)';
+
+            if (enq > 0) {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: `Promoted ${enq} rule${enq === 1 ? '' : 's'} to the catalogue`,
+                    message: `Deployment ${deployId} enqueued. ${skp} rule${skp === 1 ? '' : 's'} skipped.`,
+                    variant: 'success',
+                    mode: 'sticky'
+                }));
+            } else {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'No rules promoted',
+                    message: `${skp} rule${skp === 1 ? '' : 's'} skipped — see browser console for details.`,
+                    variant: 'warning'
+                }));
+            }
+            if (result && result.skippedReasons && result.skippedReasons.length > 0) {
+                // eslint-disable-next-line no-console
+                console.log('[Mask Workbench] Skipped rules:', result.skippedReasons);
+            }
+            this.detailError = undefined;
+        } catch (err) {
+            this.detailError = err.body ? err.body.message : 'Failed to save catalogue rules';
+            this.dispatchEvent(new ShowToastEvent({
+                title: 'Save failed',
+                message: this.detailError,
+                variant: 'error'
+            }));
+        }
     }
 }

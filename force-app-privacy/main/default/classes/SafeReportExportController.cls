@@ -31,6 +31,41 @@ public with sharing class SafeReportExportController {
     }
 
     /**
+     * One row of the "Save as Catalogue Rules" payload sent from the
+     * LWC. The LWC translates each detailFields entry whose strategy
+     * is not None / blank / EinsteinAI into one of these.
+     */
+    public class CataloguePromotionRequest {
+        @AuraEnabled public String objectApi;
+        @AuraEnabled public String fieldApi;
+        @AuraEnabled public String strategyClass;
+        @AuraEnabled public String paramsJson;
+    }
+
+    /**
+     * Result of a Save-as-Catalogue-Rules promotion. Returned to the
+     * LWC so the toast can show how many rules were enqueued vs.
+     * skipped, and which deployment Id to look up if the admin wants
+     * to inspect the metadata deploy in Setup → Deployment Status.
+     */
+    public class CataloguePromotionResult {
+        @AuraEnabled public String deploymentId;
+        @AuraEnabled public Integer rulesEnqueued;
+        @AuraEnabled public Integer rulesSkipped;
+        @AuraEnabled public List<String> skippedReasons;
+        @AuraEnabled public List<String> enqueuedFullNames;
+    }
+
+    /**
+     * Strategy names that the registry does not own and that therefore
+     * cannot be promoted to a Masking_Rule__mdt row. Kept as a Set so
+     * callers can extend it without rewriting the validation branch.
+     */
+    @TestVisible
+    private static final Set<String> NON_REGISTRY_STRATEGIES =
+        new Set<String>{ 'None', 'EinsteinAI' };
+
+    /**
      * Object types exposed in the Mask Workbench detail-mode tab.
      *
      * The list is kept short on purpose: every entry has to be a real
@@ -392,6 +427,199 @@ public with sharing class SafeReportExportController {
             }
         }
         return output;
+    }
+
+    /**
+     * Mask Workbench Slice 3 — promote the user's per-field strategy
+     * choices into the persistent Masking_Rule__mdt catalogue.
+     *
+     * Inputs come from the LWC Record tab: one entry per field whose
+     * strategy is something other than None / EinsteinAI. The method
+     * is gated by the Modify_Masking_Catalogue custom permission so
+     * the catalogue is admin-owned (consistent with §2 "two layers of
+     * policy" in MASK_WORKBENCH_PLAN — admins still own catalogue
+     * writes, even though every user can experiment in the session
+     * layer).
+     *
+     * The deploy is necessarily asynchronous — Custom Metadata writes
+     * always go through Metadata.Operations.enqueueDeployment, which
+     * returns a deployment Id and completes out-of-transaction. The
+     * LWC surfaces this Id in the success toast so the admin can
+     * inspect Setup → Deployment Status if they want hard evidence
+     * the rows landed.
+     *
+     * Naming convention for the generated CMDT records:
+     *   DeveloperName = "MWB_<Object>_<Field>"   with __c stripped
+     *                                            and non-alphanumerics
+     *                                            replaced by underscore
+     * Repeat saves for the same {Object, Field} therefore overwrite
+     * the previous row rather than accumulating duplicates — this is
+     * the behaviour MASK_WORKBENCH_PLAN §"Save as CMDT rule" describes
+     * ("with one click promote good choices into the catalogue so
+     * future users see them pre-selected").
+     */
+    @AuraEnabled
+    public static CataloguePromotionResult saveCatalogueRules(
+        List<CataloguePromotionRequest> rules
+    ) {
+        try {
+            CataloguePromotionResult result = new CataloguePromotionResult();
+            result.rulesEnqueued = 0;
+            result.rulesSkipped = 0;
+            result.skippedReasons = new List<String>();
+            result.enqueuedFullNames = new List<String>();
+
+            if (!hasCataloguePermission()) {
+                throw new AuraHandledException(
+                    'You do not have the Modify_Masking_Catalogue permission.'
+                );
+            }
+
+            if (rules == null || rules.isEmpty()) {
+                return result;
+            }
+
+            Metadata.DeployContainer container = new Metadata.DeployContainer();
+            Set<String> seenFullNames = new Set<String>();
+
+            for (CataloguePromotionRequest req : rules) {
+                String reject = validatePromotionRequest(req);
+                if (reject != null) {
+                    result.rulesSkipped++;
+                    result.skippedReasons.add(reject);
+                    continue;
+                }
+
+                String developerName = buildDeveloperName(req.objectApi, req.fieldApi);
+                String fullName = 'Masking_Rule__mdt.' + developerName;
+
+                if (seenFullNames.contains(fullName)) {
+                    result.rulesSkipped++;
+                    result.skippedReasons.add(
+                        'Duplicate {Object, Field} in payload: ' + req.objectApi + '.' + req.fieldApi
+                    );
+                    continue;
+                }
+                seenFullNames.add(fullName);
+
+                Metadata.CustomMetadata cmd = new Metadata.CustomMetadata();
+                cmd.fullName = fullName;
+                cmd.label = req.objectApi + ' ' + req.fieldApi;
+
+                cmd.values.add(buildValue('Object_API_Name__c', req.objectApi));
+                cmd.values.add(buildValue('Field_API_Name__c', req.fieldApi));
+                cmd.values.add(buildValue('Strategy_Class__c', req.strategyClass));
+                cmd.values.add(buildValue('Parameters_JSON__c',
+                    String.isBlank(req.paramsJson) ? null : req.paramsJson));
+                cmd.values.add(buildValue('Is_Active__c', true));
+                cmd.values.add(buildValue('Order__c', 100));
+
+                container.addMetadata(cmd);
+                result.rulesEnqueued++;
+                result.enqueuedFullNames.add(fullName);
+            }
+
+            if (result.rulesEnqueued > 0) {
+                result.deploymentId = enqueueDeployment(container);
+            }
+
+            return result;
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    /**
+     * Returns null if the request is promotable, or a short reason
+     * string if it has to be skipped. Validation is intentionally
+     * permissive about the LWC's payload shape — a bad row should
+     * never abort the whole batch, because partial success is the
+     * useful failure mode for a session → catalogue UX.
+     */
+    @TestVisible
+    private static String validatePromotionRequest(CataloguePromotionRequest req) {
+        if (req == null) {
+            return 'Null request entry';
+        }
+        if (String.isBlank(req.objectApi) || String.isBlank(req.fieldApi)) {
+            return 'Blank object or field for strategy ' +
+                   (req.strategyClass == null ? '(none)' : req.strategyClass);
+        }
+        if (String.isBlank(req.strategyClass)
+            || NON_REGISTRY_STRATEGIES.contains(req.strategyClass)) {
+            return 'Strategy ' + req.strategyClass + ' is not promotable for ' +
+                   req.objectApi + '.' + req.fieldApi;
+        }
+        try {
+            MaskingStrategyRegistry.resolve(req.strategyClass);
+        } catch (Exception e) {
+            return 'Strategy ' + req.strategyClass + ' is not registered: ' + e.getMessage();
+        }
+        return null;
+    }
+
+    /**
+     * Build a CMDT-safe DeveloperName from {Object, Field}. Custom
+     * Metadata DeveloperNames must be alphanumeric + underscore, so
+     * the standard Salesforce __c suffix has to be sanitised.
+     *
+     * Example:  Account.Phone        -> MWB_Account_Phone
+     *           Contact.Email_Masked__c -> MWB_Contact_Email_Masked_c
+     */
+    @TestVisible
+    private static String buildDeveloperName(String objectApi, String fieldApi) {
+        String safeField = fieldApi.replace('__c', '_c');
+        String raw = 'MWB_' + objectApi + '_' + safeField;
+        return raw.replaceAll('[^A-Za-z0-9_]', '_');
+    }
+
+    private static Metadata.CustomMetadataValue buildValue(String fieldApi, Object value) {
+        Metadata.CustomMetadataValue v = new Metadata.CustomMetadataValue();
+        v.field = fieldApi;
+        v.value = value;
+        return v;
+    }
+
+    /**
+     * Test-only mock seam for the Modify_Masking_Catalogue permission
+     * check, mirroring the FIFO-queue pattern used by
+     * PIIDetectionService for Einstein.
+     *
+     * Tests set TEST_HAS_CATALOGUE_PERM to assert both the granted
+     * and denied paths without provisioning a real permission set
+     * for the running user (which would require System.runAs and a
+     * stable user fixture across orgs).
+     */
+    @TestVisible
+    private static Boolean TEST_HAS_CATALOGUE_PERM;
+
+    @TestVisible
+    private static Boolean hasCataloguePermission() {
+        if (Test.isRunningTest() && TEST_HAS_CATALOGUE_PERM != null) {
+            return TEST_HAS_CATALOGUE_PERM;
+        }
+        return FeatureManagement.checkPermission('Modify_Masking_Catalogue');
+    }
+
+    /**
+     * Test-only mock seam for the Metadata API deploy. The real
+     * call is async and ties into platform infrastructure that
+     * cannot be intercepted from a unit test, so under
+     * Test.isRunningTest() we capture the container for inspection
+     * and return a deterministic fake Id.
+     */
+    @TestVisible
+    private static Metadata.DeployContainer TEST_LAST_CONTAINER;
+
+    @TestVisible
+    private static String enqueueDeployment(Metadata.DeployContainer container) {
+        if (Test.isRunningTest()) {
+            TEST_LAST_CONTAINER = container;
+            return 'TEST_DEPLOY_ID';
+        }
+        return Metadata.Operations.enqueueDeployment(container, null);
     }
 
     private static ExportResult runReport(String reportId, Boolean applyMasking) {

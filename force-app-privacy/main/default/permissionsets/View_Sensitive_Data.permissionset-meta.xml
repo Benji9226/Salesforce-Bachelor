@@ -6,6 +6,10 @@
         <enabled>true</enabled>
         <name>View_Sensitive_Data</name>
     </customPermissions>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>Modify_Masking_Catalogue</name>
+    </customPermissions>
     <fieldPermissions>
         <editable>false</editable>
         <field>Account.Account_Name_Masked__c</field>

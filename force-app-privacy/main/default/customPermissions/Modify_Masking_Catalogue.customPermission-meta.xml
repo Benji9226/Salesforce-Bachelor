@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Modify Masking Catalogue</label>
+    <description>Lets the holder promote Mask Workbench session choices into persistent Masking_Rule__mdt rows via the Apex Metadata API. Without it, the Save-as-Rule LWC button is hidden and the Apex entrypoint throws.</description>
+    <isLicensed>false</isLicensed>
+</CustomPermission>

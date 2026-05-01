@@ -171,8 +171,19 @@
                             icon-name="utility:undo"
                             onclick={handleResetDetailFields}
                             variant="neutral"
-                            disabled={detailResetDisabled}>
+                            disabled={detailResetDisabled}
+                            class="slds-m-right_small">
                         </lightning-button>
+                        <template if:true={canModifyCatalogue}>
+                            <lightning-button
+                                label={saveCatalogueLabel}
+                                icon-name="utility:save"
+                                onclick={handleSaveCatalogueRules}
+                                variant="brand"
+                                disabled={saveCatalogueDisabled}
+                                title="Promote the current per-field strategy choices into persistent Masking_Rule__mdt rows. Async deploy via the Apex Metadata API.">
+                            </lightning-button>
+                        </template>
                     </div>
 
                     <template if:true={detailError}>
