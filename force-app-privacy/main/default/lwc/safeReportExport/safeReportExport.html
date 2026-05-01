@@ -1,132 +1,316 @@
 <template>
-    <lightning-card title="Safe Report Export" icon-name="standard:crypto_category_wallet_group">
-        <div slot="actions">
-            <lightning-button
-                label="Preview Raw Data"
-                icon-name="utility:preview"
-                onclick={handlePreview}
-                variant="neutral"
-                disabled={previewDisabled}
-                class="slds-m-right_small">
-            </lightning-button>
-            <lightning-button
-                label="Run &amp; Mask"
-                icon-name="utility:shield"
-                onclick={handleMask}
-                variant="brand"
-                disabled={maskDisabled}
-                class="slds-m-right_small">
-            </lightning-button>
-            <lightning-button
-                label="Export Masked CSV"
-                icon-name="utility:download"
-                onclick={handleExportCsv}
-                variant="success"
-                disabled={exportDisabled}>
-            </lightning-button>
-        </div>
-
+    <lightning-card title="Mask Workbench" icon-name="standard:crypto_category_wallet_group">
         <div class="slds-p-horizontal_medium">
-            <template if:true={error}>
-                <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_small" role="alert">
-                    <p>{error}</p>
-                </div>
-            </template>
+            <lightning-tabset variant="scoped">
 
-            <div class="slds-combobox_container slds-m-bottom_medium">
-                <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
-                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
-                        <label class="slds-form-element__label">Search Reports</label>
-                        <input
-                            type="text"
-                            class="slds-input slds-combobox__input"
-                            value={searchTerm}
-                            placeholder={searchPlaceholder}
-                            oninput={handleSearchChange}
-                            onfocus={handleSearchFocus}
-                            onblur={handleSearchBlur}
-                            role="textbox"
-                        />
+                <!-- ============== REPORT TAB ============== -->
+                <lightning-tab label="Report">
+                    <div class="slds-grid slds-grid_align-end slds-m-bottom_small slds-m-top_x-small">
+                        <lightning-button
+                            label="Preview Raw Data"
+                            icon-name="utility:preview"
+                            onclick={handlePreview}
+                            variant="neutral"
+                            disabled={previewDisabled}
+                            class="slds-m-right_small">
+                        </lightning-button>
+                        <lightning-button
+                            label="Reset All Columns"
+                            icon-name="utility:undo"
+                            onclick={handleResetColumns}
+                            variant="neutral"
+                            disabled={resetDisabled}
+                            class="slds-m-right_small">
+                        </lightning-button>
+                        <lightning-button
+                            label={exportLabel}
+                            icon-name="utility:download"
+                            onclick={handleExportCsv}
+                            variant="brand"
+                            disabled={exportDisabled}>
+                        </lightning-button>
                     </div>
 
-                    <template if:true={showDropdown}>
-                        <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" role="listbox"
-                             style="max-height: 200px; overflow-y: auto; width: 100%; min-width: 100%;">
-                            <ul class="slds-listbox slds-listbox_vertical" role="presentation">
-                                <template if:true={isSearching}>
-                                    <li class="slds-listbox__item slds-p-around_small" role="presentation">
-                                        <span class="slds-text-color_weak">Searching...</span>
-                                    </li>
-                                </template>
-                                <template if:true={hasSearchResults}>
-                                    <template for:each={reportOptions} for:item="report">
-                                        <li key={report.reportId}
-                                            class="slds-listbox__item"
-                                            data-id={report.reportId}
-                                            data-name={report.reportName}
-                                            onmousedown={handleSelectReport}
-                                            role="option">
-                                            <div class="slds-listbox__option slds-listbox__option_plain slds-media slds-p-around_x-small"
-                                                 style="cursor: pointer;">
-                                                <span>{report.reportName}</span>
+                    <template if:true={error}>
+                        <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_small" role="alert">
+                            <p>{error}</p>
+                        </div>
+                    </template>
+
+                    <div class="slds-combobox_container slds-m-bottom_medium">
+                        <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
+                            <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                <label class="slds-form-element__label">Search Reports</label>
+                                <input
+                                    type="text"
+                                    class="slds-input slds-combobox__input"
+                                    value={searchTerm}
+                                    placeholder={searchPlaceholder}
+                                    oninput={handleSearchChange}
+                                    onfocus={handleSearchFocus}
+                                    onblur={handleSearchBlur}
+                                    role="textbox"
+                                />
+                            </div>
+
+                            <template if:true={showDropdown}>
+                                <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" role="listbox"
+                                     style="max-height: 200px; overflow-y: auto; width: 100%; min-width: 100%;">
+                                    <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                        <template if:true={isSearching}>
+                                            <li class="slds-listbox__item slds-p-around_small" role="presentation">
+                                                <span class="slds-text-color_weak">Searching...</span>
+                                            </li>
+                                        </template>
+                                        <template if:true={hasSearchResults}>
+                                            <template for:each={reportOptions} for:item="report">
+                                                <li key={report.reportId}
+                                                    class="slds-listbox__item"
+                                                    data-id={report.reportId}
+                                                    data-name={report.reportName}
+                                                    onmousedown={handleSelectReport}
+                                                    role="option">
+                                                    <div class="slds-listbox__option slds-listbox__option_plain slds-media slds-p-around_x-small"
+                                                         style="cursor: pointer;">
+                                                        <span>{report.reportName}</span>
+                                                    </div>
+                                                </li>
+                                            </template>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <template if:true={showWarningBadge}>
+                        <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_small" role="alert">
+                            <p><strong>RAW DATA</strong> — This preview contains unmasked data. Choose a masking strategy per column below before exporting.</p>
+                        </div>
+                    </template>
+
+                    <template if:true={showSuccessBadge}>
+                        <div class="slds-notify slds-notify_alert slds-m-bottom_small mwb-success-banner" role="alert">
+                            <p><strong>MASKED</strong> — Per-column masking is active. Toggle "None" on a column to restore its raw values, or click "Reset All Columns".</p>
+                        </div>
+                    </template>
+
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                        {subtitle}
+                    </p>
+
+                    <template if:true={isLoading}>
+                        <div class="slds-align_absolute-center slds-p-around_large">
+                            <lightning-spinner alternative-text="Loading report data..."></lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template if:true={hasData}>
+                        <div class="slds-m-bottom_small">
+                            <p class="slds-text-title_caps slds-m-bottom_x-small">Per-Column Strategy</p>
+                            <div class="slds-grid slds-wrap slds-gutters_x-small">
+                                <template for:each={columnConfigs} for:item="config">
+                                    <div key={config.idx}
+                                         class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3 slds-large-size_1-of-4 slds-m-bottom_x-small">
+                                        <div class="slds-box slds-box_x-small mwb-col-card">
+                                            <div class="slds-grid slds-grid_align-spread slds-m-bottom_xx-small">
+                                                <p class="slds-text-body_small slds-text-color_weak slds-truncate"
+                                                   title={config.label}>
+                                                    {config.label}
+                                                </p>
+                                                <template if:true={config.isMasked}>
+                                                    <span class="slds-badge slds-theme_success">Masked</span>
+                                                </template>
                                             </div>
-                                        </li>
-                                    </template>
+                                            <lightning-combobox
+                                                name={config.fieldName}
+                                                data-idx={config.idx}
+                                                value={config.strategy}
+                                                options={strategyOptions}
+                                                onchange={handleStrategyChange}
+                                                variant="label-hidden"
+                                                disabled={config.isLoading}>
+                                            </lightning-combobox>
+                                            <template if:true={config.isLoading}>
+                                                <div class="slds-m-top_xx-small">
+                                                    <lightning-spinner alternative-text="Masking..." size="small">
+                                                    </lightning-spinner>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </template>
-                            </ul>
+                            </div>
+                        </div>
+
+                        <lightning-datatable
+                            key-field="id"
+                            data={currentRows}
+                            columns={columns}
+                            hide-checkbox-column
+                            show-row-number-column>
+                        </lightning-datatable>
+                    </template>
+
+                    <template if:true={noData}>
+                        <template if:false={isLoading}>
+                            <template if:false={error}>
+                                <div class="slds-align_absolute-center slds-p-around_large slds-text-color_weak">
+                                    <p>Search for a report, then click "Preview Raw Data" to see it.</p>
+                                </div>
+                            </template>
+                        </template>
+                    </template>
+                </lightning-tab>
+
+                <!-- ============== RECORD (DETAIL) TAB ============== -->
+                <lightning-tab label="Record">
+                    <div class="slds-grid slds-grid_align-end slds-m-bottom_small slds-m-top_x-small">
+                        <lightning-button
+                            label="Reset All Fields"
+                            icon-name="utility:undo"
+                            onclick={handleResetDetailFields}
+                            variant="neutral"
+                            disabled={detailResetDisabled}>
+                        </lightning-button>
+                    </div>
+
+                    <template if:true={detailError}>
+                        <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_small" role="alert">
+                            <p>{detailError}</p>
                         </div>
                     </template>
-                </div>
-            </div>
 
-            <template if:true={showWarningBadge}>
-                <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_small" role="alert">
-                    <p><strong>RAW DATA</strong> — This preview contains unmasked sensitive data. Click "Run &amp; Mask" to apply masking before exporting.</p>
-                </div>
-            </template>
+                    <div class="slds-grid slds-gutters_small slds-m-bottom_medium slds-wrap">
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <lightning-combobox
+                                label="Object"
+                                name="detailObject"
+                                value={detailObjectApi}
+                                options={objectOptions}
+                                onchange={handleObjectChange}>
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3">
+                            <div class="slds-combobox_container">
+                                <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
+                                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                        <label class="slds-form-element__label">Search Records</label>
+                                        <input
+                                            type="text"
+                                            class="slds-input slds-combobox__input"
+                                            value={detailSearchTerm}
+                                            placeholder={detailSearchPlaceholder}
+                                            oninput={handleRecordSearchChange}
+                                            onfocus={handleRecordSearchFocus}
+                                            onblur={handleRecordSearchBlur}
+                                            role="textbox"
+                                        />
+                                    </div>
+                                    <template if:true={detailShowDropdown}>
+                                        <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" role="listbox"
+                                             style="max-height: 200px; overflow-y: auto; width: 100%; min-width: 100%;">
+                                            <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                                <template if:true={detailIsSearching}>
+                                                    <li class="slds-listbox__item slds-p-around_small" role="presentation">
+                                                        <span class="slds-text-color_weak">Searching...</span>
+                                                    </li>
+                                                </template>
+                                                <template if:true={detailHasSearchResults}>
+                                                    <template for:each={detailRecordOptions} for:item="option">
+                                                        <li key={option.recordId}
+                                                            class="slds-listbox__item"
+                                                            data-id={option.recordId}
+                                                            data-name={option.recordName}
+                                                            onmousedown={handleSelectRecordOption}
+                                                            role="option">
+                                                            <div class="slds-listbox__option slds-listbox__option_plain slds-media slds-p-around_x-small"
+                                                                 style="cursor: pointer;">
+                                                                <span>{option.recordName}</span>
+                                                            </div>
+                                                        </li>
+                                                    </template>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-            <template if:true={showSuccessBadge}>
-                <div class="slds-notify slds-notify_alert slds-m-bottom_small" role="alert"
-                     style="background-color: #04844b; color: white;">
-                    <p><strong>MASKED</strong> — All sensitive fields have been masked. Safe to export.</p>
-                </div>
-            </template>
-
-            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
-                {subtitle}
-            </p>
-
-            <template if:true={isLoading}>
-                <div class="slds-align_absolute-center slds-p-around_large">
-                    <lightning-spinner alternative-text="Loading report data..."></lightning-spinner>
-                </div>
-            </template>
-
-            <template if:true={isMasking}>
-                <div class="slds-align_absolute-center slds-p-around_large">
-                    <lightning-spinner alternative-text="Masking sensitive data..."></lightning-spinner>
-                </div>
-            </template>
-
-            <template if:true={hasData}>
-                <lightning-datatable
-                    key-field="id"
-                    data={displayRows}
-                    columns={columns}
-                    hide-checkbox-column
-                    show-row-number-column>
-                </lightning-datatable>
-            </template>
-
-            <template if:true={noData}>
-                <template if:false={isLoading}>
-                    <template if:false={error}>
-                        <div class="slds-align_absolute-center slds-p-around_large slds-text-color_weak">
-                            <p>Search for a report, then click "Preview Raw Data" to see it.</p>
+                    <template if:true={detailWarningBadge}>
+                        <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_small" role="alert">
+                            <p><strong>RAW PREVIEW</strong> — Choose a masking strategy per field. The record on disk is never modified.</p>
                         </div>
                     </template>
-                </template>
-            </template>
+
+                    <template if:true={detailSuccessBadge}>
+                        <div class="slds-notify slds-notify_alert slds-m-bottom_small mwb-success-banner" role="alert">
+                            <p><strong>MASKED</strong> — Per-field masking is active. The record on disk is unchanged. Toggle "None" or "Reset All Fields" to restore.</p>
+                        </div>
+                    </template>
+
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                        {detailSubtitle}
+                    </p>
+
+                    <template if:true={detailIsLoading}>
+                        <div class="slds-align_absolute-center slds-p-around_large">
+                            <lightning-spinner alternative-text="Loading record fields..."></lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template if:true={detailHasRecord}>
+                        <div class="slds-grid slds-wrap slds-gutters_x-small">
+                            <template for:each={detailFields} for:item="field">
+                                <div key={field.fieldApiName}
+                                     class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-m-bottom_x-small">
+                                    <div class="slds-box slds-box_x-small mwb-field-card">
+                                        <div class="slds-grid slds-grid_align-spread slds-m-bottom_xx-small">
+                                            <div class="slds-truncate" title={field.fieldLabel}>
+                                                <span class="slds-text-title slds-text-color_default">{field.fieldLabel}</span>
+                                                <span class="slds-text-body_small slds-text-color_weak slds-m-left_xx-small">({field.fieldApiName})</span>
+                                            </div>
+                                            <template if:true={field.isMasked}>
+                                                <span class="slds-badge slds-theme_success">Masked</span>
+                                            </template>
+                                        </div>
+                                        <lightning-combobox
+                                            name={field.fieldApiName}
+                                            data-field={field.fieldApiName}
+                                            value={field.strategy}
+                                            options={strategyOptions}
+                                            onchange={handleDetailStrategyChange}
+                                            variant="label-hidden"
+                                            disabled={field.isLoading}>
+                                        </lightning-combobox>
+                                        <p class="slds-m-top_xx-small mwb-field-value" title={field.currentValue}>
+                                            {field.currentValue}
+                                        </p>
+                                        <template if:true={field.isLoading}>
+                                            <div class="slds-m-top_xx-small">
+                                                <lightning-spinner alternative-text="Masking..." size="small">
+                                                </lightning-spinner>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template if:false={detailHasRecord}>
+                        <template if:false={detailIsLoading}>
+                            <template if:false={detailError}>
+                                <div class="slds-align_absolute-center slds-p-around_large slds-text-color_weak">
+                                    <p>Pick an object, type a record name, then select a match to see its fields.</p>
+                                </div>
+                            </template>
+                        </template>
+                    </template>
+                </lightning-tab>
+            </lightning-tabset>
         </div>
 
         <a data-id="downloadLink" style="display:none"></a>

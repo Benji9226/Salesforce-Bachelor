@@ -684,4 +684,707 @@ private class SafeReportExportControllerTest {
         // Assert
         System.assert(threw, 'Running a report with an invalid Id should throw');
     }
+
+    // =====================================================================
+    // applyStrategyToColumn — per-column dispatcher used by the Mask Workbench
+    // =====================================================================
+
+    @IsTest
+    static void applyStrategyToColumn_nullValues_returnsEmptyList() {
+        // Arrange
+        List<String> values = null;
+
+        // Act
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'RedactStrategy', null);
+
+        // Assert
+        System.assertNotEquals(null, actual, 'should never return null');
+        System.assert(actual.isEmpty(), 'null input should produce empty list');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_emptyValues_returnsEmptyList() {
+        // Arrange
+        List<String> values = new List<String>();
+
+        // Act
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'RedactStrategy', null);
+
+        // Assert
+        System.assert(actual.isEmpty(), 'empty input should produce empty list');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_noneStrategy_passesThrough() {
+        // Arrange
+        List<String> values = new List<String>{ 'a@b.com', 'foo', '' };
+
+        // Act
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'None', null);
+
+        // Assert
+        System.assertEquals(values, actual, '"None" must return the input unchanged');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_blankStrategy_passesThrough() {
+        // Arrange
+        List<String> values = new List<String>{ 'a', 'b' };
+
+        // Act
+        List<String> actualNull =
+            SafeReportExportController.applyStrategyToColumn(values, null, null);
+        List<String> actualEmpty =
+            SafeReportExportController.applyStrategyToColumn(values, '', null);
+
+        // Assert
+        System.assertEquals(values, actualNull, 'null strategy must passthrough');
+        System.assertEquals(values, actualEmpty, 'empty strategy must passthrough');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_redact_redactsEveryNonBlankValue() {
+        // Arrange
+        List<String> values = new List<String>{ 'a@b.com', 'foo', '' };
+
+        // Act
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'RedactStrategy', null);
+
+        // Assert
+        System.assertEquals(3, actual.size());
+        System.assertEquals('****', actual[0]);
+        System.assertEquals('****', actual[1]);
+        System.assertEquals('', actual[2], 'blank values pass through RedactStrategy unchanged');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_hashWithParams_truncatesToLength() {
+        // Arrange
+        List<String> values = new List<String>{ 'abc' };
+        String paramsJson = '{"length":8}';
+
+        // Act
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'HashStrategy', paramsJson);
+
+        // Assert
+        System.assertEquals(8, actual[0].length(),
+            'paramsJson must reach the strategy and truncate the digest');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_invalidStrategy_throwsAuraHandledException() {
+        // Arrange
+        List<String> values = new List<String>{ 'x' };
+        Boolean threw = false;
+        String typeName;
+
+        // Act
+        try {
+            SafeReportExportController.applyStrategyToColumn(values, 'NoSuchStrategy', null);
+        } catch (Exception e) {
+            threw = true;
+            typeName = e.getTypeName();
+        }
+
+        // Assert
+        System.assert(threw, 'unknown strategy should throw');
+        System.assertEquals('System.AuraHandledException', typeName,
+            'underlying exception must be wrapped for the LWC layer');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_malformedParamsJson_fallsBackToDefaults() {
+        // Arrange
+        // 16 hex chars is the HashStrategy default length
+        List<String> values = new List<String>{ 'abc' };
+        String malformed = '{"length":';
+
+        // Act
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'HashStrategy', malformed);
+
+        // Assert
+        System.assertEquals(16, actual[0].length(),
+            'malformed JSON must fall back to HashStrategy defaults');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_nonObjectParamsJson_fallsBackToDefaults() {
+        // Arrange
+        List<String> values = new List<String>{ 'abc' };
+        String arrayJson = '[1,2,3]';
+
+        // Act
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'HashStrategy', arrayJson);
+
+        // Assert
+        System.assertEquals(16, actual[0].length(),
+            'JSON arrays must fall back to defaults rather than crash');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_einstein_dedupesAndAppliesMaskedText() {
+        // Arrange
+        // Three values, two of which are duplicates -> one Einstein call,
+        // result re-applied to both occurrences.
+        List<String> values = new List<String>{
+            'Contact john@example.com',
+            'Contact john@example.com',
+            ''
+        };
+        // Match the BATCH_PROMPT_TEMPLATE response shape produced by Einstein.
+        PIIDetectionService.mockResponseQueue = new List<String>{
+            '[{"index":0,"maskedText":"Contact [REDACTED-EMAIL]","hasPII":true}]'
+        };
+
+        // Act
+        Test.startTest();
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'EinsteinAI', null);
+        Test.stopTest();
+
+        // Assert
+        System.assertEquals(3, actual.size());
+        System.assertEquals('Contact [REDACTED-EMAIL]', actual[0]);
+        System.assertEquals('Contact [REDACTED-EMAIL]', actual[1],
+            'duplicate values should reuse the cached AI output');
+        System.assertEquals('', actual[2], 'blank cells must stay blank');
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_einstein_emptyInput_isNoop() {
+        // Arrange
+        List<String> values = new List<String>{ '', '-', null };
+
+        // Act
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'EinsteinAI', null);
+
+        // Assert
+        System.assertEquals(values.size(), actual.size());
+        System.assertEquals('', actual[0]);
+        System.assertEquals('-', actual[1]);
+        System.assertEquals(null, actual[2]);
+    }
+
+    @IsTest
+    static void applyStrategyToColumn_einstein_aiFailureFallsBackToRegex() {
+        // Arrange
+        // Force every Einstein call to throw, which routes through the
+        // regex-based maskFreeText fallback inside applyEinsteinToColumn.
+        PIIDetectionService.mockExceptionQueue = new List<Exception>{
+            new SafeReportExportControllerTestException('forced AI outage'),
+            new SafeReportExportControllerTestException('forced AI outage'),
+            new SafeReportExportControllerTestException('forced AI outage')
+        };
+        List<String> values = new List<String>{ 'Contact 1234567890 done' };
+
+        // Act
+        Test.startTest();
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'EinsteinAI', null);
+        Test.stopTest();
+
+        // Assert
+        System.assertEquals('Contact **** done', actual[0],
+            'Einstein outage should fall back to the regex maskFreeText path');
+    }
+
+    // =====================================================================
+    // parseParamsJson - direct exercise of the helper
+    // =====================================================================
+
+    @IsTest
+    static void parseParamsJson_blank_returnsEmptyMap() {
+        System.assert(SafeReportExportController.parseParamsJson(null).isEmpty());
+        System.assert(SafeReportExportController.parseParamsJson('').isEmpty());
+    }
+
+    @IsTest
+    static void parseParamsJson_validObject_returnsParsedMap() {
+        // Arrange
+        String raw = '{"length":8,"prefix":"H_"}';
+
+        // Act
+        Map<String, Object> actual = SafeReportExportController.parseParamsJson(raw);
+
+        // Assert
+        System.assertEquals(8, actual.get('length'));
+        System.assertEquals('H_', actual.get('prefix'));
+    }
+
+    // =====================================================================
+    // applyStrategyToColumn — additional Einstein branches
+    // =====================================================================
+
+    @IsTest
+    static void applyStrategyToColumn_einstein_textWithoutPiiPassesThrough() {
+        // Arrange
+        // Einstein returns hasPII=false → cache puts the text unchanged.
+        PIIDetectionService.mockResponseQueue = new List<String>{
+            '[{"index":0,"maskedText":"clean text","hasPII":false}]'
+        };
+        List<String> values = new List<String>{ 'clean text' };
+
+        // Act
+        Test.startTest();
+        List<String> actual =
+            SafeReportExportController.applyStrategyToColumn(values, 'EinsteinAI', null);
+        Test.stopTest();
+
+        // Assert
+        System.assertEquals('clean text', actual[0],
+            'no-PII responses must pass the original text through unchanged');
+    }
+
+    // =====================================================================
+    // maskRowsByHeader — direct test of the runReport mask pipeline
+    // =====================================================================
+
+    @IsTest
+    static void maskRowsByHeader_emptyRows_returnsEmptyList() {
+        // Arrange
+        List<List<String>> rawRows = new List<List<String>>();
+        List<String> headers = new List<String>{ 'Email', 'Description' };
+        List<String> types = new List<String>{ 'EMAIL', 'STRING' };
+
+        // Act
+        List<List<String>> actual =
+            SafeReportExportController.maskRowsByHeader(rawRows, headers, types);
+
+        // Assert
+        System.assert(actual != null && actual.isEmpty(), 'empty input must produce empty output');
+    }
+
+    @IsTest
+    static void maskRowsByHeader_sensitiveHeader_routesThroughMaskByType() {
+        // Arrange
+        // No AI column means the batchMaskTexts path is skipped entirely
+        // and every cell goes through the keyword pipeline.
+        List<List<String>> rawRows = new List<List<String>>{
+            new List<String>{ 'Acme Inc', 'john@example.com', '4512345678' }
+        };
+        List<String> headers = new List<String>{ 'Account Name', 'Email', 'Phone' };
+        List<String> types = new List<String>{ 'STRING', 'EMAIL', 'PHONE' };
+
+        // Act
+        List<List<String>> actual =
+            SafeReportExportController.maskRowsByHeader(rawRows, headers, types);
+
+        // Assert
+        System.assertEquals(1, actual.size());
+        System.assertEquals('Acme Inc', actual[0][0],
+            'non-sensitive clean text passes maskFreeText unchanged');
+        System.assertEquals('j***@e***.com', actual[0][1], 'email column should be masked');
+        System.assertEquals('******5678', actual[0][2], 'phone column should be masked');
+    }
+
+    @IsTest
+    static void maskRowsByHeader_descriptionColumn_invokesEinsteinAndCachesResults() {
+        // Arrange
+        // Two rows, same description text → batched Einstein call returns
+        // a single masked entry that the cache fans out to both rows.
+        PIIDetectionService.mockResponseQueue = new List<String>{
+            '[{"index":0,"maskedText":"Contact [REDACTED-EMAIL] later","hasPII":true}]'
+        };
+        List<List<String>> rawRows = new List<List<String>>{
+            new List<String>{ 'A', 'Contact john@example.com later' },
+            new List<String>{ 'B', 'Contact john@example.com later' }
+        };
+        List<String> headers = new List<String>{ 'Account Name', 'Description' };
+        List<String> types = new List<String>{ 'STRING', 'STRING' };
+
+        // Act
+        Test.startTest();
+        List<List<String>> actual =
+            SafeReportExportController.maskRowsByHeader(rawRows, headers, types);
+        Test.stopTest();
+
+        // Assert
+        System.assertEquals(2, actual.size());
+        System.assertEquals('Contact [REDACTED-EMAIL] later', actual[0][1]);
+        System.assertEquals('Contact [REDACTED-EMAIL] later', actual[1][1],
+            'duplicate description rows must reuse the cached AI output');
+    }
+
+    @IsTest
+    static void maskRowsByHeader_descriptionColumn_aiFailureFallsBackToRegex() {
+        // Arrange
+        // Force every Einstein call to throw, which routes the description
+        // through PIIDetectionService.detectAndMask's catch block.
+        PIIDetectionService.mockExceptionQueue = new List<Exception>{
+            new SafeReportExportControllerTestException('forced AI outage'),
+            new SafeReportExportControllerTestException('forced AI outage'),
+            new SafeReportExportControllerTestException('forced AI outage'),
+            new SafeReportExportControllerTestException('forced AI outage')
+        };
+        List<List<String>> rawRows = new List<List<String>>{
+            new List<String>{ 'A', 'Ref 1234567890 done' }
+        };
+        List<String> headers = new List<String>{ 'Account Name', 'Description' };
+        List<String> types = new List<String>{ 'STRING', 'STRING' };
+
+        // Act
+        Test.startTest();
+        List<List<String>> actual =
+            SafeReportExportController.maskRowsByHeader(rawRows, headers, types);
+        Test.stopTest();
+
+        // Assert
+        // batchMaskTexts → success=false branch → maskFreeText fallback in batchMaskTexts.
+        System.assertEquals('Ref **** done', actual[0][1],
+            'AI outage should fall through to maskFreeText');
+    }
+
+    @IsTest
+    static void maskRowsByHeader_descriptionColumn_emptyDescriptionStaysEmpty() {
+        // Arrange
+        // No texts to mask → batchMaskTexts is skipped and the cell falls
+        // through the maskFreeText fallback in the for-loop.
+        List<List<String>> rawRows = new List<List<String>>{
+            new List<String>{ 'A', '' },
+            new List<String>{ 'B', '-' }
+        };
+        List<String> headers = new List<String>{ 'Name', 'Description' };
+        List<String> types = new List<String>{ 'STRING', 'STRING' };
+
+        // Act
+        List<List<String>> actual =
+            SafeReportExportController.maskRowsByHeader(rawRows, headers, types);
+
+        // Assert
+        System.assertEquals('', actual[0][1], 'empty description stays empty');
+        System.assertEquals('-', actual[1][1], 'dash description stays as dash');
+    }
+
+    @IsTest
+    static void maskRowsByHeader_columnIndexOutOfBounds_usesSafeDefaults() {
+        // Arrange
+        // Row has more cells than headers/types → the per-cell defaults
+        // ("STRING" type, blank header) are exercised.
+        List<List<String>> rawRows = new List<List<String>>{
+            new List<String>{ 'a', 'b', 'extra-cell' }
+        };
+        List<String> headers = new List<String>{ 'Account Name' };
+        List<String> types = new List<String>{ 'STRING' };
+
+        // Act
+        List<List<String>> actual =
+            SafeReportExportController.maskRowsByHeader(rawRows, headers, types);
+
+        // Assert
+        // Extra cells take the maskFreeText path with header=''. Clean
+        // text returns unchanged.
+        System.assertEquals(3, actual[0].size());
+        System.assertEquals('a', actual[0][0]);
+        System.assertEquals('b', actual[0][1]);
+        System.assertEquals('extra-cell', actual[0][2],
+            'extra cells should fall through maskFreeText cleanly');
+    }
+
+    // =====================================================================
+    // batchMaskTexts — exercised through maskRowsByHeader with @TestVisible access
+    // =====================================================================
+
+    @IsTest
+    static void batchMaskTexts_caches_hasPiiTrue_no_PIIfalse_andFailure() {
+        // Arrange
+        // First batch call succeeds with a mixed result (PII + no-PII),
+        // and a second item later forces the failure path.
+        PIIDetectionService.mockResponseQueue = new List<String>{
+            '[{"index":0,"maskedText":"masked one","hasPII":true},' +
+            '{"index":1,"maskedText":"clean two","hasPII":false}]'
+        };
+        List<String> texts = new List<String>{ 'one', 'two' };
+
+        // Act
+        Test.startTest();
+        Map<String, String> actual = SafeReportExportController.batchMaskTexts(texts);
+        Test.stopTest();
+
+        // Assert
+        System.assertEquals('masked one', actual.get('one'),
+            'PII branch caches the masked text');
+        System.assertEquals('two', actual.get('two'),
+            'no-PII branch caches the original text');
+    }
+
+    // =====================================================================
+    // loadRecord — detail-mode field loader for the Record tab
+    // =====================================================================
+
+    @IsTest
+    static void loadRecord_blankObject_throws() {
+        Boolean threw = false;
+        String typeName;
+        try {
+            SafeReportExportController.loadRecord('', '001000000000000');
+        } catch (Exception e) {
+            threw = true;
+            typeName = e.getTypeName();
+        }
+        System.assert(threw, 'blank object api must throw');
+        System.assertEquals('System.AuraHandledException', typeName);
+    }
+
+    @IsTest
+    static void loadRecord_blankRecordId_throws() {
+        Boolean threw = false;
+        try {
+            SafeReportExportController.loadRecord('Account', '');
+        } catch (AuraHandledException e) {
+            threw = true;
+        }
+        System.assert(threw, 'blank record id must throw');
+    }
+
+    @IsTest
+    static void loadRecord_disallowedObject_throws() {
+        // Arrange
+        // User is a real SObject in the org but is intentionally
+        // outside the allowlist to keep the detail picker focused on
+        // PII-relevant business records.
+        Boolean threw = false;
+        try {
+            SafeReportExportController.loadRecord('User', UserInfo.getUserId());
+        } catch (AuraHandledException e) {
+            threw = true;
+        }
+        System.assert(threw, 'disallowed object must throw');
+    }
+
+    @IsTest
+    static void loadRecord_unknownId_throws() {
+        // Arrange — well-formed but non-existent Account Id
+        String fakeId = '001000000000000AAA';
+        Boolean threw = false;
+        try {
+            SafeReportExportController.loadRecord('Account', fakeId);
+        } catch (AuraHandledException e) {
+            threw = true;
+        }
+        System.assert(threw, 'non-existent id must throw');
+    }
+
+    @IsTest
+    static void loadRecord_account_returnsNameAndMaskableFields() {
+        // Arrange
+        Account a = new Account(
+            Name = 'Test Co',
+            Phone = '+45 12 34 56 78',
+            Website = 'https://example.com',
+            BillingCity = 'Copenhagen'
+        );
+        insert a;
+
+        // Act
+        SafeReportExportController.RecordLoadResult result =
+            SafeReportExportController.loadRecord('Account', a.Id);
+
+        // Assert
+        System.assertEquals('Account', result.objectLabel);
+        System.assertEquals('Test Co', result.recordName,
+            'Name field value should populate recordName');
+        System.assert(result.fields.size() > 0, 'at least one maskable field should be present');
+
+        Map<String, SafeReportExportController.RecordFieldRow> byApi =
+            new Map<String, SafeReportExportController.RecordFieldRow>();
+        for (SafeReportExportController.RecordFieldRow row : result.fields) {
+            byApi.put(row.fieldApiName, row);
+        }
+        System.assert(byApi.containsKey('Name'), 'Name should be in maskable fields');
+        System.assertEquals('Test Co', byApi.get('Name').value);
+        System.assert(byApi.containsKey('Phone'), 'Phone should be in maskable fields');
+        System.assertEquals('+45 12 34 56 78', byApi.get('Phone').value);
+        System.assert(byApi.containsKey('Website'), 'Website should be in maskable fields');
+        System.assertEquals('https://example.com', byApi.get('Website').value);
+        System.assert(byApi.containsKey('BillingCity'), 'BillingCity should be in maskable fields');
+        System.assertEquals('Copenhagen', byApi.get('BillingCity').value);
+
+        // System / audit fields must not appear
+        System.assert(!byApi.containsKey('Id'),
+            'Id should be excluded from the maskable field list');
+        System.assert(!byApi.containsKey('CreatedDate'),
+            'CreatedDate is a system field and must be filtered out');
+
+        // Reference fields must not appear (Account.OwnerId / ParentId)
+        System.assert(!byApi.containsKey('OwnerId'),
+            'reference fields are not maskable and must be filtered out');
+    }
+
+    @IsTest
+    static void loadRecord_account_emptyFieldsAreFilteredOut() {
+        // Arrange — Account with only Name set; everything else is null.
+        Account a = new Account(Name = 'Empty Co');
+        insert a;
+
+        // Act
+        SafeReportExportController.RecordLoadResult result =
+            SafeReportExportController.loadRecord('Account', a.Id);
+
+        // Assert
+        // Empty fields have nothing to mask, so they must not appear in
+        // the field list. Only the populated Name should come back.
+        for (SafeReportExportController.RecordFieldRow row : result.fields) {
+            System.assertNotEquals('', row.value,
+                'empty fields must be filtered out of the LWC payload (got '
+                + row.fieldApiName + ')');
+        }
+        Boolean foundName = false;
+        for (SafeReportExportController.RecordFieldRow row : result.fields) {
+            if (row.fieldApiName == 'Name') {
+                foundName = true;
+                System.assertEquals('Empty Co', row.value);
+            }
+            System.assertNotEquals('Description', row.fieldApiName,
+                'unset Description must not survive the empty-field filter');
+        }
+        System.assert(foundName, 'Populated Name field should remain in the response');
+    }
+
+    @IsTest
+    static void loadRecord_contact_recordNameUsesNameField() {
+        // Arrange
+        // LeadSource is required by an org-level validation rule on Contact
+        // in this sandbox; supplying it keeps the test independent of admin
+        // configuration drift.
+        Contact c = new Contact(
+            FirstName = 'Jane',
+            LastName = 'Doe',
+            Email = 'jane@example.com',
+            LeadSource = 'Web'
+        );
+        insert c;
+
+        // Act
+        SafeReportExportController.RecordLoadResult result =
+            SafeReportExportController.loadRecord('Contact', c.Id);
+
+        // Assert
+        System.assertEquals('Contact', result.objectLabel);
+        System.assertEquals('Jane Doe', result.recordName,
+            'Contact.Name is a compound field whose value is the standard concatenation');
+
+        Boolean foundEmail = false;
+        for (SafeReportExportController.RecordFieldRow row : result.fields) {
+            if (row.fieldApiName == 'Email') {
+                foundEmail = true;
+                System.assertEquals('jane@example.com', row.value);
+                System.assertEquals('EMAIL', row.fieldType);
+            }
+        }
+        System.assert(foundEmail, 'Email field should be exposed in detail mode');
+    }
+
+    // =====================================================================
+    // searchRecords — type-ahead lookup for the Record tab
+    // =====================================================================
+
+    @IsTest
+    static void searchRecords_blankInputs_returnEmptyList() {
+        System.assert(
+            SafeReportExportController.searchRecords('', 'Acme').isEmpty(),
+            'blank object api should produce empty list, not throw');
+        System.assert(
+            SafeReportExportController.searchRecords('Account', '').isEmpty(),
+            'blank term should produce empty list');
+        System.assert(
+            SafeReportExportController.searchRecords('Account', null).isEmpty(),
+            'null term should produce empty list');
+    }
+
+    @IsTest
+    static void searchRecords_shortTerm_returnsEmptyList() {
+        // Arrange — a real record exists but term is one character.
+        insert new Account(Name = 'Acme Industries');
+
+        // Act
+        List<SafeReportExportController.RecordOption> actual =
+            SafeReportExportController.searchRecords('Account', 'A');
+
+        // Assert
+        System.assert(actual.isEmpty(),
+            'one-character terms must short-circuit before SOQL to keep type-ahead cheap');
+    }
+
+    @IsTest
+    static void searchRecords_disallowedObject_throws() {
+        Boolean threw = false;
+        try {
+            SafeReportExportController.searchRecords('User', 'admin');
+        } catch (AuraHandledException e) {
+            threw = true;
+        }
+        System.assert(threw, 'objects outside the allowlist must throw');
+    }
+
+    @IsTest
+    static void searchRecords_account_matchesByNamePrefix() {
+        // Arrange
+        insert new List<Account>{
+            new Account(Name = 'Acme Industries'),
+            new Account(Name = 'Acme Logistics'),
+            new Account(Name = 'Beta Corp')
+        };
+
+        // Act
+        List<SafeReportExportController.RecordOption> actual =
+            SafeReportExportController.searchRecords('Account', 'Acme');
+
+        // Assert
+        System.assertEquals(2, actual.size(), 'two Acme accounts should match');
+        Set<String> names = new Set<String>();
+        for (SafeReportExportController.RecordOption opt : actual) {
+            names.add(opt.recordName);
+            System.assertNotEquals(null, opt.recordId, 'every option must carry an Id');
+        }
+        System.assert(names.contains('Acme Industries'));
+        System.assert(names.contains('Acme Logistics'));
+        System.assert(!names.contains('Beta Corp'),
+            'non-matching accounts must not leak through');
+    }
+
+    @IsTest
+    static void searchRecords_contact_matchesByNameField() {
+        // Arrange — Contact's name field is the compound Name (FirstName + LastName).
+        insert new Contact(
+            FirstName = 'Jane',
+            LastName = 'Doe',
+            LeadSource = 'Web'
+        );
+        insert new Contact(
+            FirstName = 'John',
+            LastName = 'Smith',
+            LeadSource = 'Web'
+        );
+
+        // Act
+        List<SafeReportExportController.RecordOption> actual =
+            SafeReportExportController.searchRecords('Contact', 'Doe');
+
+        // Assert
+        System.assertEquals(1, actual.size());
+        System.assertEquals('Jane Doe', actual[0].recordName);
+    }
+
+    @IsTest
+    static void searchRecords_noMatches_returnsEmptyList() {
+        // Arrange
+        insert new Account(Name = 'Acme Industries');
+
+        // Act
+        List<SafeReportExportController.RecordOption> actual =
+            SafeReportExportController.searchRecords('Account', 'ZzzNotAMatch');
+
+        // Assert
+        System.assert(actual.isEmpty(), 'a term with no matches must return an empty list');
+    }
+
+    private class SafeReportExportControllerTestException extends Exception {}
 }

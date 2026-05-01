@@ -1,0 +1,22 @@
+.mwb-success-banner {
+    background-color: #04844b;
+    color: white;
+}
+
+.mwb-col-card {
+    min-height: 5.5rem;
+}
+
+.mwb-field-card {
+    min-height: 7.5rem;
+}
+
+.mwb-field-value {
+    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
+    font-size: 0.85rem;
+    word-break: break-all;
+    background-color: #f3f3f3;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    min-height: 1.4rem;
+}
