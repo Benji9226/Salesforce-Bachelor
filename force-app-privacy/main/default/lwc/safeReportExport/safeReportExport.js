@@ -8,16 +8,56 @@ import searchRecords from '@salesforce/apex/SafeReportExportController.searchRec
 import saveCatalogueRules from '@salesforce/apex/SafeReportExportController.saveCatalogueRules';
 import hasCataloguePerm from '@salesforce/customPermission/Modify_Masking_Catalogue';
 
+// Each entry has the friendly `label` shown to the user, the dropdown
+// `value`, and the actual `strategyClass` + `paramsJson` the Apex
+// dispatcher needs. The "Fake X" rows bundle parameters so the user
+// does not have to know about library names — picking "Fake First
+// Name" is exactly equivalent to picking LibraryStrategy with
+// {"libraryName":"FIRST_NAME"} but the dropdown reads as a task,
+// not as an implementation detail.
 const STRATEGY_OPTIONS = [
-    { label: 'None (raw)', value: 'None' },
-    { label: 'Nullify', value: 'NullStrategy' },
-    { label: 'Redact ****', value: 'RedactStrategy' },
-    { label: 'Scramble (random)', value: 'ScrambleStrategy' },
-    { label: 'Hash (SHA-256)', value: 'HashStrategy' },
-    { label: 'Format-Preserving', value: 'FormatPreservingStrategy' },
-    { label: 'Library (faker)', value: 'LibraryStrategy' },
-    { label: 'Einstein AI', value: 'EinsteinAI' }
+    { label: 'None (raw)', value: 'None',
+      strategyClass: 'None', paramsJson: null },
+
+    { label: 'Fake First Name', value: 'FakeFirstName',
+      strategyClass: 'LibraryStrategy',
+      paramsJson: '{"libraryName":"FIRST_NAME"}' },
+    { label: 'Fake Last Name', value: 'FakeLastName',
+      strategyClass: 'LibraryStrategy',
+      paramsJson: '{"libraryName":"LAST_NAME"}' },
+    { label: 'Fake Company Name', value: 'FakeCompany',
+      strategyClass: 'LibraryStrategy',
+      paramsJson: '{"libraryName":"COMPANY"}' },
+    { label: 'Fake Email', value: 'FakeEmail',
+      strategyClass: 'FakeEmailStrategy', paramsJson: null },
+    { label: 'Fake Phone', value: 'FakePhone',
+      strategyClass: 'FakePhoneStrategy', paramsJson: null },
+    { label: 'Redact Patterns', value: 'RedactPatterns',
+      strategyClass: 'RedactPatternsStrategy', paramsJson: null },
+
+    { label: 'Nullify', value: 'NullStrategy',
+      strategyClass: 'NullStrategy', paramsJson: null },
+    { label: 'Redact ****', value: 'RedactStrategy',
+      strategyClass: 'RedactStrategy', paramsJson: null },
+    { label: 'Scramble (random)', value: 'ScrambleStrategy',
+      strategyClass: 'ScrambleStrategy', paramsJson: null },
+    { label: 'Hash (SHA-256)', value: 'HashStrategy',
+      strategyClass: 'HashStrategy', paramsJson: null },
+    { label: 'Format-Preserving Caesar', value: 'FormatPreservingStrategy',
+      strategyClass: 'FormatPreservingStrategy', paramsJson: null },
+
+    { label: 'Einstein AI', value: 'EinsteinAI',
+      strategyClass: 'EinsteinAI', paramsJson: null }
 ];
+
+const COMBOBOX_OPTIONS = STRATEGY_OPTIONS.map(o => ({
+    label: o.label, value: o.value
+}));
+
+const OPTIONS_BY_VALUE = STRATEGY_OPTIONS.reduce((acc, o) => {
+    acc[o.value] = o;
+    return acc;
+}, {});
 
 const OBJECT_OPTIONS = [
     { label: 'Account', value: 'Account' },
@@ -26,6 +66,29 @@ const OBJECT_OPTIONS = [
     { label: 'Opportunity', value: 'Opportunity' },
     { label: 'Case', value: 'Case' }
 ];
+
+// Heuristic mapping from a header / API name fragment to the
+// dropdown value the "Suggest Strategies" button should pre-pick.
+// Order matters: the first match wins, so put the more specific
+// patterns ("first name") before the more generic ones ("name").
+const SUGGEST_RULES = [
+    { test: /first[\s_]*name|firstname|givenname|fornavn/i, value: 'FakeFirstName' },
+    { test: /last[\s_]*name|lastname|surname|familyname|efternavn/i, value: 'FakeLastName' },
+    { test: /company|account[\s_]*name|organi[sz]ation|virksomhed/i, value: 'FakeCompany' },
+    { test: /e[-_]?mail/i, value: 'FakeEmail' },
+    { test: /phone|mobile|fax|telefon/i, value: 'FakePhone' },
+    { test: /description|notes?|comments?|beskrivelse/i, value: 'RedactPatterns' }
+];
+
+function suggestForLabel(text) {
+    if (!text) return null;
+    for (const rule of SUGGEST_RULES) {
+        if (rule.test.test(text)) {
+            return rule.value;
+        }
+    }
+    return null;
+}
 
 export default class SafeReportExport extends LightningElement {
     // Report tab state
@@ -58,7 +121,7 @@ export default class SafeReportExport extends LightningElement {
     detailIsSearching = false;
     detailShowDropdown = false;
 
-    strategyOptions = STRATEGY_OPTIONS;
+    strategyOptions = COMBOBOX_OPTIONS;
     objectOptions = OBJECT_OPTIONS;
 
     // ---- Report tab getters ----
@@ -85,6 +148,10 @@ export default class SafeReportExport extends LightningElement {
 
     get resetDisabled() {
         return !this.hasRawPreview || !this.anyMasked;
+    }
+
+    get suggestDisabled() {
+        return !this.hasRawPreview || this.isLoading;
     }
 
     get subtitle() {
@@ -129,14 +196,22 @@ export default class SafeReportExport extends LightningElement {
         return !this.detailHasRecord || !this.anyDetailMasked;
     }
 
+    get detailSuggestDisabled() {
+        return !this.detailHasRecord || this.detailIsLoading;
+    }
+
     get canModifyCatalogue() {
         return hasCataloguePerm === true;
     }
 
     get savePromotableFields() {
-        return this.detailFields.filter(f =>
-            f.strategy && f.strategy !== 'None' && f.strategy !== 'EinsteinAI'
-        );
+        return this.detailFields.filter(f => {
+            const opt = OPTIONS_BY_VALUE[f.strategy];
+            if (!opt) return false;
+            if (opt.value === 'None') return false;
+            if (opt.strategyClass === 'EinsteinAI') return false;
+            return true;
+        });
     }
 
     get saveCatalogueDisabled() {
@@ -271,19 +346,25 @@ export default class SafeReportExport extends LightningElement {
         }
     }
 
-    async handleStrategyChange(event) {
+    handleStrategyChange(event) {
         const idx = parseInt(event.target.dataset.idx, 10);
         const newStrategy = event.detail.value;
+        return this.applyStrategyToColumnIdx(idx, newStrategy);
+    }
+
+    async applyStrategyToColumnIdx(idx, optionValue) {
         const config = this.columnConfigs[idx];
         if (!config) return;
+        const opt = OPTIONS_BY_VALUE[optionValue];
+        if (!opt) return;
 
         this.updateColumnConfig(idx, {
-            strategy: newStrategy,
-            isLoading: newStrategy !== 'None',
+            strategy: optionValue,
+            isLoading: optionValue !== 'None',
             isMasked: false
         });
 
-        if (newStrategy === 'None') {
+        if (optionValue === 'None') {
             this.applyColumnValues(idx, this.rawColumns[idx]);
             this.updateColumnConfig(idx, { isLoading: false, isMasked: false });
             return;
@@ -292,8 +373,8 @@ export default class SafeReportExport extends LightningElement {
         try {
             const masked = await applyStrategyToColumn({
                 values: this.rawColumns[idx],
-                strategyName: newStrategy,
-                paramsJson: null
+                strategyName: opt.strategyClass,
+                paramsJson: opt.paramsJson
             });
             this.applyColumnValues(idx, masked);
             this.updateColumnConfig(idx, { isLoading: false, isMasked: true });
@@ -307,6 +388,25 @@ export default class SafeReportExport extends LightningElement {
                 isMasked: false
             });
         }
+    }
+
+    async handleSuggestColumns() {
+        if (!this.hasRawPreview) return;
+        const tasks = this.columnConfigs.map(config => {
+            const suggestion = suggestForLabel(config.label);
+            return suggestion ? this.applyStrategyToColumnIdx(config.idx, suggestion) : null;
+        }).filter(Boolean);
+        const applied = tasks.length;
+        await Promise.all(tasks);
+        this.dispatchEvent(new ShowToastEvent({
+            title: applied > 0
+                ? `Suggested masking applied to ${applied} column${applied === 1 ? '' : 's'}`
+                : 'No matching columns to suggest',
+            message: applied > 0
+                ? 'Columns matching FirstName / LastName / Email / Phone / Company / Description heuristics have been masked. Adjust per column as needed.'
+                : 'None of the column headers matched the built-in name / email / phone / description heuristics.',
+            variant: applied > 0 ? 'success' : 'warning'
+        }));
     }
 
     updateColumnConfig(idx, patch) {
@@ -472,20 +572,26 @@ export default class SafeReportExport extends LightningElement {
         }
     }
 
-    async handleDetailStrategyChange(event) {
+    handleDetailStrategyChange(event) {
         const fieldApi = event.target.dataset.field;
         const newStrategy = event.detail.value;
+        return this.applyStrategyToDetailField(fieldApi, newStrategy);
+    }
+
+    async applyStrategyToDetailField(fieldApi, optionValue) {
         const idx = this.detailFields.findIndex(f => f.fieldApiName === fieldApi);
         if (idx === -1) return;
+        const opt = OPTIONS_BY_VALUE[optionValue];
+        if (!opt) return;
 
         const field = this.detailFields[idx];
         this.updateDetailField(idx, {
-            strategy: newStrategy,
-            isLoading: newStrategy !== 'None',
+            strategy: optionValue,
+            isLoading: optionValue !== 'None',
             isMasked: false
         });
 
-        if (newStrategy === 'None') {
+        if (optionValue === 'None') {
             this.updateDetailField(idx, {
                 currentValue: field.rawValue,
                 isLoading: false,
@@ -497,8 +603,8 @@ export default class SafeReportExport extends LightningElement {
         try {
             const masked = await applyStrategyToColumn({
                 values: [field.rawValue],
-                strategyName: newStrategy,
-                paramsJson: null
+                strategyName: opt.strategyClass,
+                paramsJson: opt.paramsJson
             });
             const maskedValue = masked && masked[0] != null ? masked[0] : '';
             this.updateDetailField(idx, {
@@ -516,6 +622,26 @@ export default class SafeReportExport extends LightningElement {
                 isMasked: false
             });
         }
+    }
+
+    async handleSuggestFields() {
+        if (!this.detailHasRecord) return;
+        const tasks = this.detailFields.map(field => {
+            const hint = (field.fieldApiName || '') + ' ' + (field.fieldLabel || '');
+            const suggestion = suggestForLabel(hint);
+            return suggestion ? this.applyStrategyToDetailField(field.fieldApiName, suggestion) : null;
+        }).filter(Boolean);
+        const applied = tasks.length;
+        await Promise.all(tasks);
+        this.dispatchEvent(new ShowToastEvent({
+            title: applied > 0
+                ? `Suggested masking applied to ${applied} field${applied === 1 ? '' : 's'}`
+                : 'No matching fields to suggest',
+            message: applied > 0
+                ? 'Fields matching FirstName / LastName / Email / Phone / Company / Description heuristics have been masked. The record on disk is unchanged.'
+                : 'None of the field names matched the built-in name / email / phone / description heuristics.',
+            variant: applied > 0 ? 'success' : 'warning'
+        }));
     }
 
     updateDetailField(idx, patch) {
@@ -539,12 +665,15 @@ export default class SafeReportExport extends LightningElement {
         const promotable = this.savePromotableFields;
         if (promotable.length === 0) return;
 
-        const rules = promotable.map(f => ({
-            objectApi: this.detailObjectApi,
-            fieldApi: f.fieldApiName,
-            strategyClass: f.strategy,
-            paramsJson: null
-        }));
+        const rules = promotable.map(f => {
+            const opt = OPTIONS_BY_VALUE[f.strategy];
+            return {
+                objectApi: this.detailObjectApi,
+                fieldApi: f.fieldApiName,
+                strategyClass: opt.strategyClass,
+                paramsJson: opt.paramsJson
+            };
+        });
 
         try {
             const result = await saveCatalogueRules({ rules });

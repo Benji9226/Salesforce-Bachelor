@@ -19,23 +19,25 @@
  *     unchanged so a misconfigured rule can never corrupt data.
  */
 public class LibraryStrategy implements MaskingStrategy {
-    @TestVisible
-    private static final List<String> FIRST_NAMES = new List<String>{
+    // Promoted from @TestVisible private to public so that derived
+    // strategies (FakeEmailStrategy in particular) can compose their
+    // own outputs from the same name pool without duplicating the
+    // dictionary. The lists are `final` and immutable for callers,
+    // so widening visibility does not introduce mutation hazards.
+    public static final List<String> FIRST_NAMES = new List<String>{
         'Alex', 'Blake', 'Cameron', 'Drew', 'Emery', 'Finley', 'Gray', 'Harper',
         'Indigo', 'Jordan', 'Kai', 'Lane', 'Morgan', 'Nova', 'Oakley', 'Parker',
         'Quinn', 'Reese', 'Sage', 'Tatum', 'Uriel', 'Vesper', 'Winter', 'Xander',
         'Yael', 'Zion'
     };
-    @TestVisible
-    private static final List<String> LAST_NAMES = new List<String>{
+    public static final List<String> LAST_NAMES = new List<String>{
         'Andersen', 'Bak', 'Christensen', 'Dahl', 'Eriksen', 'Frederiksen',
         'Green', 'Hansen', 'Iversen', 'Jensen', 'Knudsen', 'Larsen',
         'Madsen', 'Nielsen', 'Olsen', 'Pedersen', 'Quist', 'Rasmussen',
         'Sorensen', 'Thomsen', 'Ulrich', 'Vestergaard', 'Wulff', 'Xylander',
         'Yde', 'Zacharias'
     };
-    @TestVisible
-    private static final List<String> COMPANIES = new List<String>{
+    public static final List<String> COMPANIES = new List<String>{
         'Acme Consulting', 'Beacon Analytics', 'Clearwater Group', 'Delta Systems',
         'Evergreen Partners', 'Forge Industries', 'Granite Labs', 'Horizon Retail',
         'Ivy Logistics', 'Junction Media', 'Keystone Finance', 'Lattice AI',

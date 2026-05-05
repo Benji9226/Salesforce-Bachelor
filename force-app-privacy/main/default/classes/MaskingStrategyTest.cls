@@ -591,4 +591,438 @@ private class MaskingStrategyTest {
         System.assertEquals(null, a.Phone,
             'null phone should pass through RedactStrategy unchanged');
     }
+
+    // ---------------------------------------------------------------
+    // FakeEmailStrategy
+    // ---------------------------------------------------------------
+
+    @IsTest
+    static void fakeEmail_blankInputIsPassthrough() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        System.assertEquals(null, s.mask(null, null));
+        System.assertEquals('', s.mask('', null));
+    }
+
+    @IsTest
+    static void fakeEmail_isDeterministic() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String a = s.mask('anna@gmail.com', null);
+        String b = s.mask('anna@gmail.com', null);
+        System.assertEquals(a, b, 'same input must produce same fake email');
+    }
+
+    @IsTest
+    static void fakeEmail_keepsOriginalDomainByDefault() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String output = s.mask('anna@gmail.com', null);
+        System.assert(output.endsWith('@gmail.com'),
+            'default behaviour must preserve the original domain, got: ' + output);
+    }
+
+    @IsTest
+    static void fakeEmail_localPartIsFromLibrary() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String output = s.mask('anna@gmail.com', null);
+        String localPart = output.substring(0, output.indexOf('@'));
+        System.assert(localPart.contains('.'),
+            'default firstdotlast style should contain a dot: ' + localPart);
+        List<String> halves = localPart.split('\\.');
+        System.assertEquals(2, halves.size(),
+            'firstdotlast should produce exactly first.last, got: ' + localPart);
+        Boolean firstFromLib = false;
+        for (String n : LibraryStrategy.FIRST_NAMES) {
+            if (halves[0] == n.toLowerCase()) { firstFromLib = true; break; }
+        }
+        Boolean lastFromLib = false;
+        for (String n : LibraryStrategy.LAST_NAMES) {
+            if (halves[1] == n.toLowerCase()) { lastFromLib = true; break; }
+        }
+        System.assert(firstFromLib,
+            'first half must come from FIRST_NAMES library: ' + halves[0]);
+        System.assert(lastFromLib,
+            'last half must come from LAST_NAMES library: ' + halves[1]);
+    }
+
+    @IsTest
+    static void fakeEmail_overrideDomain() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String output = s.mask(
+            'anna@gmail.com',
+            new Map<String, Object>{ 'domain' => 'fakecorp.test' }
+        );
+        System.assert(output.endsWith('@fakecorp.test'),
+            'override domain must be honoured: ' + output);
+    }
+
+    @IsTest
+    static void fakeEmail_styleFirstLast() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String output = s.mask(
+            'anna@gmail.com',
+            new Map<String, Object>{ 'style' => 'firstlast' }
+        );
+        String localPart = output.substring(0, output.indexOf('@'));
+        System.assert(!localPart.contains('.'),
+            'firstlast style must not contain a dot: ' + localPart);
+    }
+
+    @IsTest
+    static void fakeEmail_styleFirstNum_endsWithTwoDigits() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String output = s.mask(
+            'anna@gmail.com',
+            new Map<String, Object>{ 'style' => 'firstnum' }
+        );
+        String localPart = output.substring(0, output.indexOf('@'));
+        System.assert(localPart.length() >= 3,
+            'firstnum should produce at least name+two digits: ' + localPart);
+        String tail = localPart.substring(localPart.length() - 2);
+        System.assert(tail.isNumeric(),
+            'firstnum must end with two digits, got: ' + tail);
+    }
+
+    @IsTest
+    static void fakeEmail_unknownStyleFallsBackToFirstDotLast() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String output = s.mask(
+            'anna@gmail.com',
+            new Map<String, Object>{ 'style' => 'unsupported_style_xyz' }
+        );
+        String localPart = output.substring(0, output.indexOf('@'));
+        System.assert(localPart.contains('.'),
+            'unknown style must fall back to firstdotlast: ' + localPart);
+    }
+
+    @IsTest
+    static void fakeEmail_inputWithNoAtSignUsesFallbackDomain() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String output = s.mask('not-an-email', null);
+        System.assert(output.endsWith('@example.com'),
+            'no-@ input must fall back to example.com: ' + output);
+    }
+
+    @IsTest
+    static void fakeEmail_overrideFallbackDomain() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String output = s.mask(
+            'not-an-email',
+            new Map<String, Object>{ 'fallbackDomain' => 'redacted.local' }
+        );
+        System.assert(output.endsWith('@redacted.local'),
+            'fallbackDomain must be honoured for no-@ input: ' + output);
+    }
+
+    @IsTest
+    static void fakeEmail_differentInputsProduceDifferentOutputs() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        Set<String> outputs = new Set<String>{
+            s.mask('anna@gmail.com', null),
+            s.mask('bob@gmail.com', null),
+            s.mask('carol@gmail.com', null),
+            s.mask('dave@gmail.com', null)
+        };
+        System.assert(outputs.size() >= 2,
+            'four distinct inputs should not all collide: ' + outputs);
+    }
+
+    @IsTest
+    static void fakeEmail_blankOverrideDomainFallsBackToOriginal() {
+        MaskingStrategy s = new FakeEmailStrategy();
+        String output = s.mask(
+            'anna@gmail.com',
+            new Map<String, Object>{ 'domain' => '' }
+        );
+        System.assert(output.endsWith('@gmail.com'),
+            'blank override must fall back to original domain: ' + output);
+    }
+
+    // ---------------------------------------------------------------
+    // FakePhoneStrategy
+    // ---------------------------------------------------------------
+
+    @IsTest
+    static void fakePhone_blankInputIsPassthrough() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        System.assertEquals(null, s.mask(null, null));
+        System.assertEquals('', s.mask('', null));
+    }
+
+    @IsTest
+    static void fakePhone_isDeterministic() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        String a = s.mask('+45 12 34 56 78', null);
+        String b = s.mask('+45 12 34 56 78', null);
+        System.assertEquals(a, b, 'same input must produce same fake phone');
+    }
+
+    @IsTest
+    static void fakePhone_preservesNonDigitCharacters() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        String input = '+45 (12) 34-56.78';
+        String output = s.mask(input, null);
+        System.assertEquals(input.length(), output.length(),
+            'output length must equal input length');
+        for (Integer i = 0; i < input.length(); i++) {
+            Integer cp = input.charAt(i);
+            if (!(cp >= 48 && cp <= 57)) {
+                System.assertEquals(input.substring(i, i + 1),
+                    output.substring(i, i + 1),
+                    'non-digit at index ' + i + ' must be preserved');
+            }
+        }
+    }
+
+    @IsTest
+    static void fakePhone_replacesDigitsWithDigits() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        String output = s.mask('+45 12 34 56 78', null);
+        for (Integer i = 0; i < output.length(); i++) {
+            Integer cp = output.charAt(i);
+            String ch = output.substring(i, i + 1);
+            // Either it was a non-digit (preserved verbatim) or it is a digit.
+            Boolean isDigit = cp >= 48 && cp <= 57;
+            Boolean isPreservedNonDigit = ' +-()._/'.contains(ch);
+            System.assert(isDigit || isPreservedNonDigit,
+                'every char must be a digit or a preserved separator, got: ' + ch);
+        }
+    }
+
+    @IsTest
+    static void fakePhone_outputDiffersFromInput() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        // SHA-256 collisions producing the same digit pattern are
+        // astronomically unlikely; if this assert ever fails for a
+        // realistic phone number we have a real bug, not a flake.
+        String input = '+45 12 34 56 78';
+        String output = s.mask(input, null);
+        System.assertNotEquals(input, output,
+            'masked phone should differ from the original');
+    }
+
+    @IsTest
+    static void fakePhone_keepLastNPreservesTrailingDigits() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        String input = '555-123-4567';
+        String output = s.mask(
+            input,
+            new Map<String, Object>{ 'keepLastN' => 4 }
+        );
+        System.assertEquals(input.length(), output.length());
+        System.assert(output.endsWith('4567'),
+            'keepLastN=4 must preserve last four digits, got: ' + output);
+    }
+
+    @IsTest
+    static void fakePhone_keepLastNLargerThanDigitCountKeepsAll() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        String input = '12-34';
+        String output = s.mask(
+            input,
+            new Map<String, Object>{ 'keepLastN' => 999 }
+        );
+        System.assertEquals(input, output,
+            'keepLastN larger than digit count must preserve every digit');
+    }
+
+    @IsTest
+    static void fakePhone_negativeKeepLastNTreatedAsZero() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        String inputA = s.mask('555-123-4567',
+            new Map<String, Object>{ 'keepLastN' => -3 });
+        String inputB = s.mask('555-123-4567', null);
+        System.assertEquals(inputB, inputA,
+            'negative keepLastN must behave identically to default');
+    }
+
+    @IsTest
+    static void fakePhone_saltChangesOutput() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        String unsalted = s.mask('555-123-4567', null);
+        String salted = s.mask(
+            '555-123-4567',
+            new Map<String, Object>{ 'salt' => 'org-A' }
+        );
+        System.assertNotEquals(unsalted, salted,
+            'salt should change the deterministic output');
+    }
+
+    @IsTest
+    static void fakePhone_differentInputsProduceDifferentOutputs() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        Set<String> outputs = new Set<String>{
+            s.mask('+45 11 11 11 11', null),
+            s.mask('+45 22 22 22 22', null),
+            s.mask('+45 33 33 33 33', null),
+            s.mask('+45 44 44 44 44', null)
+        };
+        System.assert(outputs.size() >= 2,
+            'four distinct inputs should not all collide: ' + outputs);
+    }
+
+    @IsTest
+    static void fakePhone_inputWithNoDigitsPassthrough() {
+        MaskingStrategy s = new FakePhoneStrategy();
+        String input = 'no digits here';
+        String output = s.mask(input, null);
+        System.assertEquals(input, output,
+            'input with zero digits must be returned verbatim');
+    }
+
+    // ---------------------------------------------------------------
+    // RedactPatternsStrategy
+    // ---------------------------------------------------------------
+
+    @IsTest
+    static void redactPatterns_blankInputIsPassthrough() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        System.assertEquals(null, s.mask(null, null));
+        System.assertEquals('', s.mask('', null));
+    }
+
+    @IsTest
+    static void redactPatterns_masksDanishCpr() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask('CPR is 123456-7890 today', null);
+        System.assert(output.contains('******-****'),
+            'CPR pattern must be redacted: ' + output);
+        System.assert(!output.contains('123456-7890'));
+    }
+
+    @IsTest
+    static void redactPatterns_masksCreditCard() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask('Card 4111-2222-3333-4444 expires soon', null);
+        System.assert(output.contains('****-****-****-****'),
+            'credit card must be redacted: ' + output);
+    }
+
+    @IsTest
+    static void redactPatterns_masksCvvAndExpiry() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask('CVV: 123 and Exp: 12/25', null);
+        System.assert(output.contains('CVV: ***'), 'CVV must be redacted: ' + output);
+        System.assert(output.contains('Exp: **/**'), 'Exp must be redacted: ' + output);
+    }
+
+    @IsTest
+    static void redactPatterns_masksEmail() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask('Contact me at anna@gmail.com please', null);
+        System.assert(output.contains('***@***.***'),
+            'email must be redacted: ' + output);
+        System.assert(!output.contains('anna@gmail.com'));
+    }
+
+    @IsTest
+    static void redactPatterns_masksLongDigitRun() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask('Account 123456789 owes us', null);
+        System.assert(output.contains('****'),
+            'long digit run must be redacted: ' + output);
+        System.assert(!output.contains('123456789'));
+    }
+
+    @IsTest
+    static void redactPatterns_masksSalary() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask('Salary: 95000 per month', null);
+        System.assert(output.contains('Salary: ******'),
+            'salary must be redacted: ' + output);
+    }
+
+    @IsTest
+    static void redactPatterns_keepsSurroundingProse() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask('Customer Anna phoned at 11am', null);
+        System.assert(output.contains('Customer Anna phoned at'),
+            'prose without structured PII must stay readable: ' + output);
+    }
+
+    @IsTest
+    static void redactPatterns_includeEmailFalseLeavesEmailAlone() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask(
+            'Email anna@gmail.com',
+            new Map<String, Object>{ 'includeEmail' => false }
+        );
+        System.assert(output.contains('anna@gmail.com'),
+            'includeEmail=false must leave email untouched: ' + output);
+    }
+
+    @IsTest
+    static void redactPatterns_includeCprFalseLeavesCprAlone() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask(
+            'CPR 123456-7890',
+            new Map<String, Object>{ 'includeCpr' => false }
+        );
+        System.assert(output.contains('123456-7890'),
+            'includeCpr=false must leave CPR untouched: ' + output);
+    }
+
+    @IsTest
+    static void redactPatterns_chainedMasksAllPatterns() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String input =
+            'Anna called from +45 12345678 about CPR 123456-7890, ' +
+            'card 4111-2222-3333-4444 CVV: 123 Exp: 12/25, ' +
+            'email anna@gmail.com Salary: 95000';
+        String output = s.mask(input, null);
+        System.assert(!output.contains('123456-7890'), 'CPR leaked: ' + output);
+        System.assert(!output.contains('4111-2222-3333-4444'), 'card leaked: ' + output);
+        System.assert(!output.contains('anna@gmail.com'), 'email leaked: ' + output);
+        System.assert(!output.contains('Salary: 95000'), 'salary leaked: ' + output);
+        System.assert(output.contains('Anna called from'),
+            'prose must remain: ' + output);
+    }
+
+    @IsTest
+    static void redactPatterns_stringTrueParamIsAccepted() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        // JSON.deserializeUntyped occasionally hands us "true" / "false"
+        // as strings depending on how the catalogue stored them; the
+        // strategy must tolerate both forms.
+        String output = s.mask(
+            'Email anna@gmail.com',
+            new Map<String, Object>{ 'includeEmail' => 'true' }
+        );
+        System.assert(output.contains('***@***.***'),
+            'string "true" must enable the email regex: ' + output);
+    }
+
+    @IsTest
+    static void redactPatterns_stringFalseParamIsAccepted() {
+        MaskingStrategy s = new RedactPatternsStrategy();
+        String output = s.mask(
+            'Email anna@gmail.com',
+            new Map<String, Object>{ 'includeEmail' => 'false' }
+        );
+        System.assert(output.contains('anna@gmail.com'),
+            'string "false" must disable the email regex: ' + output);
+    }
+
+    // ---------------------------------------------------------------
+    // Registry round-trip for the three new strategies
+    // ---------------------------------------------------------------
+
+    @IsTest
+    static void registry_resolvesFakeEmailStrategy() {
+        MaskingStrategyRegistry.clearCache();
+        MaskingStrategy s = MaskingStrategyRegistry.resolve('FakeEmailStrategy');
+        System.assert(s instanceof FakeEmailStrategy);
+    }
+
+    @IsTest
+    static void registry_resolvesFakePhoneStrategy() {
+        MaskingStrategyRegistry.clearCache();
+        MaskingStrategy s = MaskingStrategyRegistry.resolve('FakePhoneStrategy');
+        System.assert(s instanceof FakePhoneStrategy);
+    }
+
+    @IsTest
+    static void registry_resolvesRedactPatternsStrategy() {
+        MaskingStrategyRegistry.clearCache();
+        MaskingStrategy s = MaskingStrategyRegistry.resolve('RedactPatternsStrategy');
+        System.assert(s instanceof RedactPatternsStrategy);
+    }
 }

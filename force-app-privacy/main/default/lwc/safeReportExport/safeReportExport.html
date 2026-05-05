@@ -15,6 +15,15 @@
                             class="slds-m-right_small">
                         </lightning-button>
                         <lightning-button
+                            label="Suggest Strategies"
+                            icon-name="utility:einstein"
+                            onclick={handleSuggestColumns}
+                            variant="neutral"
+                            disabled={suggestDisabled}
+                            title="Auto-pick a realistic-fake strategy for every column whose header looks like a name, email, phone, company, or description."
+                            class="slds-m-right_small">
+                        </lightning-button>
+                        <lightning-button
                             label="Reset All Columns"
                             icon-name="utility:undo"
                             onclick={handleResetColumns}
@@ -166,6 +175,15 @@
                 <!-- ============== RECORD (DETAIL) TAB ============== -->
                 <lightning-tab label="Record">
                     <div class="slds-grid slds-grid_align-end slds-m-bottom_small slds-m-top_x-small">
+                        <lightning-button
+                            label="Suggest Strategies"
+                            icon-name="utility:einstein"
+                            onclick={handleSuggestFields}
+                            variant="neutral"
+                            disabled={detailSuggestDisabled}
+                            title="Auto-pick a realistic-fake strategy for every field whose name looks like a first/last name, email, phone, company, or description."
+                            class="slds-m-right_small">
+                        </lightning-button>
                         <lightning-button
                             label="Reset All Fields"
                             icon-name="utility:undo"
