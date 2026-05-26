@@ -422,3 +422,14 @@ FodyWeavers.xsd
 .sfdx/
 node_modules/
 .localdevserver/
+
+# Local-only thesis/project notes (kept on this machine, not on GitHub)
+CHANGELOG.md
+CODE_DOCUMENTATION.md
+DSRM_LOG.md
+ISSUES.md
+MASK_WORKBENCH_PLAN.md
+RESEARCH_LINKS.md
+THESIS_FRAMEWORK.md
+THESIS_NOTES.md
+.cursor/plans/
