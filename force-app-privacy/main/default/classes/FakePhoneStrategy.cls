@@ -18,8 +18,7 @@
  *   * FakePhoneStrategy hashes the entire input, so two different
  *     phone numbers produce uncorrelated outputs even when they share
  *     a prefix. Recovering the original from the masked value would
- *     require breaking SHA-256, which moves the strategy into the
- *     pseudonymisation regime of GDPR Art. 4(5).
+ *     require breaking SHA-256.
  *
  * Determinism: same input -> same output, every time, without any
  * cross-row state. This preserves referential integrity (the same

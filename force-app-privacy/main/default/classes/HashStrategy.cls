@@ -5,8 +5,8 @@
  * referential integrity across objects (a hashed email on a Contact
  * will equal the same hashed email on any related Case). Without the
  * original value there is no practical way to recover it, so the
- * output is suitable wherever GDPR Article 4(5) pseudonymisation is
- * required and no re-identification key will ever be stored.
+ * output is suitable wherever an irreversible, non-recoverable
+ * transformation is required and no re-identification key will ever be stored.
  *
  * Inspired by Keepit's "Hashing" technique.
  *

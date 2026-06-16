@@ -1,7 +1,7 @@
 /**
  * Deterministic, realistic-looking fake email substitution.
  *
- * Designed to answer the thesis question "what does GDPR-friendly
+ * Designed to answer the thesis question "what does a realistic
  * masked output look like to a downstream user who needs to QA a
  * report or demo a sandbox?". The other built-in strategies all
  * destroy the email shape (HashStrategy returns hex, ScrambleStrategy
